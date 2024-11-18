@@ -1,42 +1,38 @@
-<div identificación="encabezado" align="center">
-  <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=25&duration=2000&pause=1&color=FFFFFF&center=true&vCenter=true&repeat=false&width=435&lines=Hello!%F0%9F%91%8B+I'm+Pylon" alt="Typing SVG" /></a>
-</div >
-<br>
 
-<div identificación="centro" align="center">
-  <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=25&duration=2000&pause=1&color=D7D7D7&center=true&vCenter=true&repeat=false&width=435&lines=%3C+About+Me+%3E" alt="Typing SVG" /></a>
-</div>
+<h2 align="center">👋 Welcome to my Github!</h2>
 
-<p align="center">Hello! My name is Miguel 👋 I am just starting to create CTF, so far I have only created machines for Dockerlabs and HackMyVM.</p>
+<hr/>
 
-<div identificación="encabezado" align="center">
-  <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=25&duration=2000&pause=1&color=D7D7D7&center=true&vCenter=true&repeat=false&width=435&lines=%3C+My+Skills+%3E" alt="Typing SVG" /></a>
-</div>
+<img align='right' src='images/avatar.png' width='25%'>  
 
-<p align="center">
-<a target="blank"><img align="center" src="https://github.com/Pylonet/pylon/blob/main/linux.svg" alt="" height="50" /></a>
-<a target="blank"><img align="center" src="https://github.com/Pylonet/pylon/blob/main/bash.svg" alt="" height="50" /></a>
-<a target="blank"><img align="center" src="https://github.com/Pylonet/pylon/blob/main/docker.svg" alt="" height="50" /></a>
-<a target="blank"><img align="center" src="https://github.com/Pylonet/pylon/blob/main/html.svg" alt="" height="50" /></a>
-</p>
 
-<div identificación="encabezado" align="center">
-  <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=25&duration=2000&pause=1&color=D7D7D7&center=true&vCenter=true&repeat=false&width=435&lines=%3C+HTB+Profile+%3E" alt="Typing SVG" /></a>
-</div>
 
-<div align="center">
-  <a href="https://app.hackthebox.com/profile/1560890">
-    <img src="https://www.hackthebox.eu/badge/image/1560890" alt="Hack The Box Badge">
-  </a>
-</div>
+* 🐧 `My name is`: **Pylon**,
+* 💻 `OS`: **She/Her**,
+* ⚡ `I'm`: **16 years old**,
+* 🔖 `I’m currently learning`: **CBBH Path**,
+* ❤️ `I love`: **Hacking Web**  ,
+* 📌 `Favorite machines`: **Grandma & Chatme**,
+* 🪛 `Future machines`: **🤫**
 
-<div identificación="encabezado" align="center">
-  <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=25&duration=2000&pause=1&color=D7D7D7&center=true&vCenter=true&repeat=false&width=435&lines=%3C+My+Content+%3E" alt="Typing SVG" /></a>
-</div>
+<br/>
+
+<h2 align="center">☕ My Skills</h2>
+
+<h4 align="center">💻 Programming languages</h4>
 
 <p align="center">
-I create content in Dockerlabs plataform: Whoiam, Wallet, Master, ChatMe, Grandma.
+<img alt="Static Badge" src="https://img.shields.io/badge/Bash-Bash?logo=gnubash&logoColor=white&color=black">
+<img alt="Static Badge" src="https://img.shields.io/badge/HTML-HTML?logo=html5&logoColor=white&color=%23E34F26">
+<img alt="Static Badge" src="https://img.shields.io/badge/Markdown-Markdown?logo=markdown&logoColor=white&color=black">
+<img alt="Static Badge" src="https://img.shields.io/badge/CSS-CSS?logo=css3&logoColor=white&color=%231572B6">
+<img alt="Static Badge" src="https://img.shields.io/badge/PHP-PHP?logo=php&logoColor=white&color=%23777BB4">
 </p>
 
-##
-<p align="center"><img src="https://github.com/Pylonet/pylon/blob/main/github-user-contribution.svg" alt="Snake animation" /></p>
+<h4 align="center">⚙ Software</h4>
+
+<p align="center">
+<img alt="Static Badge" src="https://img.shields.io/badge/MySQL-MySQL?logo=mysql&logoColor=white&color=%234479A1">
+<img alt="Static Badge" src="https://img.shields.io/badge/Apache-Apache?logo=apache&logoColor=white&color=%23D22128">
+<img alt="Static Badge" src="https://img.shields.io/badge/Nginx-Nginx?logo=nginx&logoColor=white&color=%23009639">
+<img alt="Static Badge" src="https://img.shields.io/badge/Ubuntu-Ubuntu?logo=ubuntu&logoColor=white&color=%23E95420">
