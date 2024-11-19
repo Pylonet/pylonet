@@ -36,3 +36,7 @@
 <img alt="Static Badge" src="https://img.shields.io/badge/Apache-Apache?logo=apache&logoColor=white&color=%23D22128">
 <img alt="Static Badge" src="https://img.shields.io/badge/Nginx-Nginx?logo=nginx&logoColor=white&color=%23009639">
 <img alt="Static Badge" src="https://img.shields.io/badge/Ubuntu-Ubuntu?logo=ubuntu&logoColor=white&color=%23E95420">
+<img alt="Static Badge" src="https://img.shields.io/badge/WordPress-WordPress?logo=wordpress&color=%2321759B">
+<img alt="Static Badge" src="https://img.shields.io/badge/Tmux-Tmux?logo=tmux&logoColor=white&color=%231BB91F">
+<img alt="Static Badge" src="https://img.shields.io/badge/Virtualbox-Virtualbox?logo=virtualbox&logoColor=white&color=%23183A61">
+<img alt="Static Badge" src="https://img.shields.io/badge/VMware-VMware?logo=vmware&logoColor=white&color=%23607078">
