@@ -20,7 +20,6 @@
 <h2 align="center">🚀 Statics</h2>
 
 <p align="center">
-<img height="50%" width="auto" src="https://github-readme-stats.vercel.app/api?username=Pylonet&theme=gruvbox&show_icons=true&hide_border=true&count_private=true" alt="Pylonet's GitHub Stats" />
 <img height="50%" width="auto" src="https://github-readme-stats.vercel.app/api/top-langs/?username=Pylonet&theme=gruvbox&show_icons=true&hide_border=true&layout=compact" alt="Pylonet's GitHub Stats" />
 </p>
 
