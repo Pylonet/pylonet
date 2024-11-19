@@ -17,6 +17,13 @@
 
 <br/>
 
+<h2 align="center">🚀 Statics</h2>
+
+<p align="center">
+<img height="50%" width="auto" src="https://github-readme-stats.vercel.app/api?username=Pylonet&theme=gruvbox&show_icons=true&hide_border=true&count_private=true" alt="Pylonet's GitHub Stats" />
+<img height="50%" width="auto" src="https://github-readme-stats.vercel.app/api/top-langs/?username=Pylonet&theme=gruvbox&show_icons=true&hide_border=true&layout=compact" alt="Pylonet's GitHub Stats" />
+</p>
+
 <h2 align="center">☕ My Skills</h2>
 
 <h4 align="center">💻 Programming languages</h4>
@@ -40,3 +47,5 @@
 <img alt="Static Badge" src="https://img.shields.io/badge/Tmux-Tmux?logo=tmux&logoColor=white&color=%231BB91F">
 <img alt="Static Badge" src="https://img.shields.io/badge/Virtualbox-Virtualbox?logo=virtualbox&logoColor=white&color=%23183A61">
 <img alt="Static Badge" src="https://img.shields.io/badge/VMware-VMware?logo=vmware&logoColor=white&color=%23607078">
+<img alt="Static Badge" src="https://img.shields.io/badge/MySQL-MySQL?logo=mysql&logoColor=white&color=%234479A1">
+
