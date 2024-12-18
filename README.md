@@ -46,5 +46,6 @@
 <img alt="Static Badge" src="https://img.shields.io/badge/Tmux-Tmux?logo=tmux&logoColor=white&color=%231BB91F">
 <img alt="Static Badge" src="https://img.shields.io/badge/Virtualbox-Virtualbox?logo=virtualbox&logoColor=white&color=%23183A61">
 <img alt="Static Badge" src="https://img.shields.io/badge/VMware-VMware?logo=vmware&logoColor=white&color=%23607078">
-<img alt="Static Badge" src="https://img.shields.io/badge/MySQL-MySQL?logo=mysql&logoColor=white&color=%234479A1">
+<img alt="Static Badge" src="https://img.shields.io/badge/BurpSuite-BurpSuite?logo=burpsuite&logoColor=white&color=%23FF6633">
+</p>
 
