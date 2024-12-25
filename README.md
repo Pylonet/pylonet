@@ -48,5 +48,6 @@
 <img alt="Static Badge" src="https://img.shields.io/badge/Virtualbox-Virtualbox?logo=virtualbox&logoColor=white&color=%23183A61">
 <img alt="Static Badge" src="https://img.shields.io/badge/VMware-VMware?logo=vmware&logoColor=white&color=%23607078">
 <img alt="Static Badge" src="https://img.shields.io/badge/BurpSuite-BurpSuite?logo=burpsuite&logoColor=white&color=%23FF6633">
+<img alt="Static Badge" src="https://img.shields.io/badge/Docker-Docker?logo=docker&logoColor=white&color=%232496ED">
 </p>
 
