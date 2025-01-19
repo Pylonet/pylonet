@@ -49,5 +49,9 @@
 <img alt="Static Badge" src="https://img.shields.io/badge/VMware-VMware?logo=vmware&logoColor=white&color=%23607078">
 <img alt="Static Badge" src="https://img.shields.io/badge/BurpSuite-BurpSuite?logo=burpsuite&logoColor=white&color=%23FF6633">
 <img alt="Static Badge" src="https://img.shields.io/badge/Docker-Docker?logo=docker&logoColor=white&color=%232496ED">
+<img alt="Static Badge" src="https://img.shields.io/badge/Obsidian-Obsidian?logo=obsidian&color=%237C3AED">
+<img alt="Static Badge" src="https://img.shields.io/badge/Notion-Notion?logo=notion&color=%23000000">
+<img alt="Static Badge" src="https://img.shields.io/badge/OBS-OBS?logo=obsstudio&color=%23302E31">
+
 </p>
 
