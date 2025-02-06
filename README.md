@@ -12,7 +12,6 @@
 * ⚡ `I'm`: **16 years old**,
 * 🔖 `I’m currently learning`: **CBBH Path**,
 * ❤️ `I love`: **Hacking Web**  ,
-* 📌 `Favorite machine i created `: **Grandma & Chatme**,
 * 🪛 `Future machines`: **🤫**
 
 <br/>
