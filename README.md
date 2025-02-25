@@ -8,7 +8,7 @@
 
 
 * 🐧 `My name is`: **Pylon**,
-* 💻 `OS`: **Windows 10**,
+* 💻 `OS`: **Arch Linux**,
 * ⚡ `I'm`: **16 years old**,
 * 🔖 `I’m currently learning`: **CBBH Path**,
 * ❤️ `I love`: **Hacking Web**  ,
