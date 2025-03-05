@@ -5,4 +5,4 @@ Soy un joven apasionado por la **Ciberseguridad** y el **Desarrollo Web**, siemp
 ## Tecnologías
 
 ### Frontend
-<img align='left' src='images/tecnologias/bash.svg' width='2%'>  
+<img align='left' src='images/tecnologias/bash.svg' width='4%'>  
