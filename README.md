@@ -1,22 +1,21 @@
-<p align="center" width="300">
-   <img align="center" width="200" src="avatar.png" />
-   <h3 align="center">¡Hey 👋! Soy Pylon </h3>
-</p>
+# ¡Hey 👋! Soy Pylon
+Soy un joven apasionado por la **Ciberseguridad** y el **Desarrollo Web**. Siempre estoy en busca de nuevos conocimientos y tecnologías para mejorar mis habilidades en Hacking Web y Desarrollo Web. 🚀
 
-<p align="center">
-   <a href="https://pylonet.gitbook.io" target="blank">GitBook</a>
-    <a href="https://www.youtube.com/@Pylonet" target="blank">YouTube</a>
-</p>
+# 🔧 Tecnologías 
+- 🌐 **Frontend:** HTML, CSS, JavaScript.
+- 💻 **Backend**: PHP, Nginx, Apache2, MySQL.
+- 🗄️ **Otros**: Bash, MarkDown.
 
-<p align="center">
-Soy un joven apasionado por la <a style="font-weight: bold;">Ciberseguridad</a> y el <a style="font-weight: bold;">Desarrollo Web</a>. Siempre estoy en busca de nuevos conocimientos y tecnologías para mejorar mis habilidades en Hacking Web y Desarrollo Web. 🚀
-</p>
+# 🧰 Herramientas
+- **Docker**: Entornos de desarrollo.
+- **Notion**: Apuntes y organización de proyectos.
+- **Visual Studio Code**: Desarrollo de código.
 
-<div align="center">
-    <h1>⚙️ Tecnologías y Herramientas</h1>
-    <ul style="display: inline-block; text-align: left;">
-        <li><a style="font-weight: bold;">🌐 Frontend:</a> HTML, CSS, JavaScript.</li>
-        <li><a style="font-weight: bold;">💻 Backend:</a> PHP, Nginx, Apache2.</li>
-        <li><a style="font-weight: bold;">🐳 Docker:</a> Entornos de desarrollo.</li>
-    </ul>
-</div>
+# 🔋 Actualmente estoy aprendiendo
+- **React**: Biblioteca de JavaScript diseñada para crear interfaces de usuario web.
+- **Astro**: Framework basado en JavaScript diseñado para construir sitios web orientados al contenido, como blogs, marketing y comercio.
+
+# 📲 ¿Cómo contactarme?
+Puedes contactarme mediante las siguientes redes sociales:
+- **Twitter (X)**: https://x.com/Pylonetwork
+- **Discord**: Pylon
