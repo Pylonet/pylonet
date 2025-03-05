@@ -1,12 +1,9 @@
-# ¡Hola, soy Pylon! 👋
+<img align='center' src='images/avatar.png' width='12%'>  
 
 Soy un joven apasionado por la **Ciberseguridad** y el **Desarrollo Web**, siempre estoy dispuesto a aprender nuevas tecnologías para mejorar mis capacidades en áreas como Hacking Web o Desarrollo Web.
 
 ## Tecnologías
+- Frontend: HTML, CSS, JavaScript.
+- Backend: PHP, Nginx, Apache2
 
-### Frontend
-<img align='left' src='images/tecnologias/html.svg' width='6%'>  
-<img align='left' src='images/tecnologias/css.svg' width='6%'>  
-
-### Backend
-<img align='left' src='images/tecnologias/php.svg' width='6%'>  
+## Actualmente estoy aprendiendo
