@@ -4,7 +4,7 @@ Soy un joven apasionado por la **Ciberseguridad** y el **Desarrollo Web**. Siemp
 [GitBook](https://pylonet.gitbook.io) [Portfolio](https://pylonet.vercel.app/)
 
 # 🔧 Tecnologías 
-- 🌐 **Frontend:** HTML, CSS, JavaScript.
+- 🌐 **Frontend:** HTML, CSS, JavaScript, Tailwind.
 - 💻 **Backend**: PHP, Nginx, Apache2, MySQL.
 - 🗄️ **Otros**: Bash, MarkDown.
 
