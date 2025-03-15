@@ -14,7 +14,7 @@ Soy un joven apasionado por la **Ciberseguridad** y el **Desarrollo Web**. Siemp
 - **Visual Studio Code**: Desarrollo de código.
 
 # 🔋 Actualmente estoy aprendiendo
-- **React**: Biblioteca de JavaScript diseñada para crear interfaces de usuario web.
+- **Netx.JS**: Biblioteca de JavaScript diseñada para crear interfaces de usuario web.
 - **Astro**: Framework basado en JavaScript diseñado para construir sitios web orientados al contenido, como blogs, marketing y comercio.
 
 # 📲 ¿Cómo contactarme?
